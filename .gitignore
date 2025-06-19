@@ -1,0 +1,15 @@
+.idea
+
+*.yaml
+!.pre-commit-config.yaml
+!example-config.yaml
+
+*.json
+*.db*
+*.log
+*.bak
+
+/start
+/golib
+/vendor
+/logs
