@@ -1,0 +1,19 @@
+FROM golang:1-alpine3.21 AS builder
+
+RUN apk add --no-cache git ca-certificates build-base su-exec olm-dev ffmpeg su-exec \
+    ca-certificates olm bash jq yq curl
+
+COPY . /build
+WORKDIR /build
+RUN ls -la
+RUN ./build.sh
+
+COPY ./docker-run.sh /docker-run.sh
+
+RUN go install github.com/mitranim/gow@latest
+RUN echo 'cd /build && gow run ./whatsapp-cloud $@' > /usr/bin/whatsapp-cloud \
+&& chmod +x /usr/bin/whatsapp-cloud
+
+VOLUME /data
+
+CMD ["../docker-run.sh", "dev"]
