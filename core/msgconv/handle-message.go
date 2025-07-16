@@ -18,18 +18,24 @@ package msgconv
 
 import (
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
-	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/types"
 )
 
-func MessageIDToInfo(client *whatsmeow.Client, parsedMsgID *waid.ParsedMessageID) *types.MessageInfo {
-	isFromMe := parsedMsgID.Sender.User == client.Store.GetLID().User || parsedMsgID.Sender.User == client.Store.GetJID().User
-	return &types.MessageInfo{
-		MessageSource: types.MessageSource{
-			Chat:     parsedMsgID.Chat,
-			Sender:   parsedMsgID.Sender,
-			IsFromMe: isFromMe,
-			IsGroup:  parsedMsgID.Chat.Server == types.GroupServer,
+type ParsedMessageID = struct {
+	MessageSource struct {
+		Chat   string
+		Sender string
+	}
+	ID string
+}
+
+func MessageIDToInfo(parsedMsgID *waid.ParsedMessageID) ParsedMessageID {
+	return ParsedMessageID{
+		MessageSource: struct {
+			Chat   string
+			Sender string
+		}{
+			Chat:   parsedMsgID.Chat,
+			Sender: parsedMsgID.Sender,
 		},
 		ID: parsedMsgID.ID,
 	}

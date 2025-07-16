@@ -3,7 +3,7 @@ package connector
 import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/database"
 
-	"go.mau.fi/mautrix-whatsapp/pkg/waid"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 )
 
 func (wa *WhatsappCloudConnector) GetDBMetaTypes() database.MetaTypes {

@@ -13,8 +13,6 @@ import (
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 	"github.com/rs/zerolog"
 	"go.mau.fi/util/exsync"
-	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/types/events"
 )
 
 const LoginConnectWait = 15 * time.Second
@@ -28,13 +26,11 @@ var (
 type WaCloudLogin struct {
 	User     *bridgev2.User
 	Main     *WhatsappCloudConnector
-	Client   *whatsmeow.Client
 	Log      zerolog.Logger
 	Timezone string
 
 	StartTime     time.Time
 	LoginError    error
-	LoginSuccess  *events.PairSuccess
 	LoginComplete *exsync.Event
 
 	Closed         atomic.Bool
@@ -60,9 +56,7 @@ func (wl *WaCloudLogin) Wait(ctx context.Context) (*bridgev2.LoginStep, error) {
 			Name: string(wl.User.BridgeID),
 		},
 		Metadata: &waid.UserLoginMetadata{
-			WALID:      wl.LoginSuccess.LID.User,
-			WADeviceID: wl.LoginSuccess.ID.Device,
-			Timezone:   wl.Timezone,
+			Timezone: wl.Timezone,
 
 			HistorySyncPortalsNeedCreating: false,
 		},
@@ -87,8 +81,6 @@ func (wl *WaCloudLogin) Wait(ctx context.Context) (*bridgev2.LoginStep, error) {
 
 func (wl *WaCloudLogin) Cancel() {
 	wl.Closed.Store(true)
-	wl.Client.RemoveEventHandler(wl.EventHandlerID)
-	wl.Client.Disconnect()
 }
 
 func (wl *WaCloudLogin) StartWithOverride(
@@ -112,11 +104,6 @@ func (wl *WaCloudLogin) SubmitUserInput(
 ) (*bridgev2.LoginStep, error) {
 	ctx, cancel := context.WithTimeout(ctx, LoginConnectWait)
 	defer cancel()
-	err := wl.Client.Connect()
-	if err != nil {
-		wl.Log.Err(err).Msg("Failed to connect to WhatsApp for phone code login")
-		return nil, err
-	}
 
 	return nil, nil
 }

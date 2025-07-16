@@ -5,8 +5,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	up "go.mau.fi/util/configupgrade"
-	"go.mau.fi/whatsmeow/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -58,13 +58,10 @@ type DisplaynameParams struct {
 	Phone string
 }
 
-func (c *Config) FormatDisplayname(jid types.JID, phone string, contact types.ContactInfo) string {
+func (c *Config) FormatDisplayname(jid string, phone string, contact types.ContactInfo) string {
 	var nameBuf strings.Builder
 	if phone == "" {
-		phone = "+" + jid.User
-		if jid.Server != types.DefaultUserServer {
-			phone = jid.User
-		}
+		phone = "+" + jid
 	}
 	err := c.displaynameTemplate.Execute(&nameBuf, &DisplaynameParams{
 		ContactInfo: contact,

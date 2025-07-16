@@ -18,15 +18,11 @@ package msgconv
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 
-	"github.com/iKonoTelecomunicaciones/go/event"
-	"github.com/iKonoTelecomunicaciones/go/id"
-	"github.com/rs/zerolog"
 	"golang.org/x/image/draw"
 )
 
@@ -76,20 +72,4 @@ func createThumbnailAndGetSize(source []byte, pngThumbnail bool) ([]byte, int, i
 		return nil, width, height, fmt.Errorf("failed to re-encode thumbnail: %w", err)
 	}
 	return buf.Bytes(), width, height, nil
-}
-
-func createThumbnail(source []byte, png bool) ([]byte, error) {
-	data, _, _, err := createThumbnailAndGetSize(source, png)
-	return data, err
-}
-
-func (mc *MessageConverter) downloadThumbnail(ctx context.Context, original []byte, thumbnailURL id.ContentURIString, thumbnailFile *event.EncryptedFileInfo, png bool) ([]byte, error) {
-	if len(thumbnailURL) == 0 && thumbnailFile == nil {
-		// just fall back to making thumbnail of original
-	} else if thumbnail, err := mc.Bridge.Bot.DownloadMedia(ctx, thumbnailURL, thumbnailFile); err != nil {
-		zerolog.Ctx(ctx).Warn().Err(err).Msg("Failed to download thumbnail in event, falling back to generating thumbnail from source")
-	} else {
-		return createThumbnail(thumbnail, png)
-	}
-	return createThumbnail(original, png)
 }

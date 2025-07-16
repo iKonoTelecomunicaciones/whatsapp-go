@@ -2,7 +2,6 @@ package connector
 
 import (
 	"context"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,27 +9,19 @@ import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/msgconv"
-	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 	"go.mau.fi/util/exsync"
-	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/store"
-	"go.mau.fi/whatsmeow/store/sqlstore"
-	wbLog "go.mau.fi/whatsmeow/util/log"
-	"google.golang.org/protobuf/proto"
 )
 
 const EditMaxAge = 15 * time.Minute
 
 type WhatsappCloudConnector struct {
-	Bridge      *bridgev2.Bridge
-	Config      Config
-	DeviceStore *sqlstore.Container
-	MsgConv     *msgconv.MessageConverter
-	DB          *whatsappclouddb.Database
+	Bridge  *bridgev2.Bridge
+	Config  Config
+	MsgConv *msgconv.MessageConverter
+	DB      *whatsappclouddb.Database
 
 	firstClientConnectOnce sync.Once
 
-	mediaEditCache         MediaEditCache
 	mediaEditCacheLock     sync.RWMutex
 	stopMediaEditCacheLoop atomic.Pointer[context.CancelFunc]
 }
@@ -62,21 +53,11 @@ func (whatsappConnector *WhatsappCloudConnector) Init(bridge *bridgev2.Bridge) {
 		bridge.Log.With().Str("db_section", "whatsappcloud").Logger(),
 	)
 	whatsappConnector.MsgConv = msgconv.New(bridge)
-	whatsappConnector.DeviceStore = sqlstore.NewWithDB(
-		bridge.DB.RawDB,
-		bridge.DB.Dialect.String(),
-		wbLog.Zerolog(bridge.Log.With().Str("db_section", "whatsmeow").Logger()),
-	)
 	whatsappConnector.MsgConv.DB = whatsappConnector.DB
-	store.DeviceProps.Os = proto.String(whatsappConnector.Config.OSName)
 }
 
 func (whatsappConnector *WhatsappCloudConnector) Start(ctx context.Context) error {
-	err := whatsappConnector.DeviceStore.Upgrade(ctx)
-	if err != nil {
-		return bridgev2.DBUpgradeError{Err: err, Section: "whatsmeow"}
-	}
-	err = whatsappConnector.DB.Upgrade(ctx)
+	err := whatsappConnector.DB.Upgrade(ctx)
 	if err != nil {
 		return bridgev2.DBUpgradeError{Err: err, Section: "whatsappcloud"}
 	}
@@ -100,24 +81,6 @@ func (whatsappConnector *WhatsappCloudConnector) GetLoginFlows() []bridgev2.Logi
 	return []bridgev2.LoginFlow{}
 }
 
-func (whatsappConnector *WhatsappCloudConnector) onFirstClientConnect() {
-	ctx := context.Background()
-	httpClient := &http.Client{}
-	ver, err := whatsmeow.GetLatestVersion(ctx, httpClient)
-	if err != nil {
-		whatsappConnector.Bridge.Log.Err(err).Msg("Failed to get latest WhatsApp web version number")
-	} else {
-		whatsappConnector.Bridge.Log.Debug().
-			Stringer("hardcoded_version", store.GetWAVersion()).
-			Stringer("latest_version", *ver).
-			Msg("Got latest WhatsApp web version number")
-		store.SetWAVersion(*ver)
-	}
-	meclCtx, cancel := context.WithCancel(context.Background())
-	whatsappConnector.stopMediaEditCacheLoop.Store(&cancel)
-	go whatsappConnector.mediaEditCacheExpireLoop(meclCtx)
-}
-
 func (whatsappConnector *WhatsappCloudConnector) CreateLogin(
 	_ context.Context,
 	user *bridgev2.User,
@@ -137,27 +100,6 @@ func (whatsappConnector *WhatsappCloudConnector) CreateLogin(
 func (whatsappConnector *WhatsappCloudConnector) LoadUserLogin(
 	_ context.Context, login *bridgev2.UserLogin,
 ) error {
-	client := &WhatsappCloudClient{
-		Main:      whatsappConnector,
-		UserLogin: login,
-	}
-	login.Client = client
-
-	var err error
-	client.JID = waid.ParseUserLoginID(login.ID, 0)
-	if err != nil {
-		return err
-	}
-
-	if client.Device != nil {
-		log := client.UserLogin.Log.With().Str("component", "whatsmeow").Logger()
-		client.Client = whatsmeow.NewClient(client.Device, wbLog.Zerolog(log))
-	} else {
-		client.UserLogin.Log.Warn().Stringer(
-			"jid",
-			client.JID,
-		).Msg("No device found for user in whatsmeow store")
-	}
-
+	// TODO: Edit this to load the user login from the database.
 	return nil
 }

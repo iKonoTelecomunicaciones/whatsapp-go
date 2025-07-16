@@ -5,68 +5,45 @@ import (
 	"strings"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
-	"go.mau.fi/whatsmeow/types"
 )
 
 const LIDPrefix = "lid-"
 const BotPrefix = "bot-"
 
 type ParsedMessageID struct {
-	Chat   types.JID
-	Sender types.JID
-	ID     types.MessageID
+	Chat   string
+	Sender string
+	ID     string
 }
 
-func MakePortalID(jid types.JID) networkid.PortalID {
-	return networkid.PortalID(jid.ToNonAD().String())
+func MakePortalID(jid string) networkid.PortalID {
+	return networkid.PortalID(jid)
 }
 
-func ParseUserID(user networkid.UserID) types.JID {
+func ParseUserID(user networkid.UserID) string {
 	if strings.HasPrefix(string(user), LIDPrefix) {
-		return types.NewJID(strings.TrimPrefix(string(user), LIDPrefix), types.HiddenUserServer)
+		return strings.TrimPrefix(string(user), LIDPrefix)
 	} else if strings.HasPrefix(string(user), BotPrefix) {
-		return types.NewJID(strings.TrimPrefix(string(user), BotPrefix), types.BotServer)
+		return strings.TrimPrefix(string(user), BotPrefix)
 	}
-	return types.NewJID(string(user), types.DefaultUserServer)
+	return string(user)
 }
 
-func MakeUserID(user types.JID) networkid.UserID {
-	switch user.Server {
-	case types.DefaultUserServer:
-		return networkid.UserID(user.User)
-	case types.BotServer:
-		return networkid.UserID(BotPrefix + user.User)
-	case types.HiddenUserServer:
-		return networkid.UserID(LIDPrefix + user.User)
-	default:
-		return ""
-	}
+func MakeUserID(user string) networkid.UserID {
+	return networkid.UserID(user)
 }
 
-func ParsePortalID(portal networkid.PortalID) (types.JID, error) {
-	parsed, err := types.ParseJID(string(portal))
-	if err != nil {
-		return types.EmptyJID, fmt.Errorf("invalid portal ID: %w", err)
-	}
-	return parsed, nil
+func ParsePortalID(portal networkid.PortalID) (string, error) {
+	return string(portal), nil
 }
 
-func MakeUserLoginID(user types.JID) networkid.UserLoginID {
-	if user.Server != types.DefaultUserServer {
-		return ""
-	}
-	return networkid.UserLoginID(user.User)
+func MakeUserLoginID(user string) networkid.UserLoginID {
+	return networkid.UserLoginID(user)
 }
 
-func ParseUserLoginID(user networkid.UserLoginID, deviceID uint16) types.JID {
-	if user == "" {
-		return types.EmptyJID
-	}
-	return types.JID{
-		Server: types.DefaultUserServer,
-		User:   string(user),
-		Device: deviceID,
-	}
+func ParseUserLoginID(user networkid.UserLoginID, deviceID uint16) string {
+
+	return string(user)
 }
 
 func ParseMessageID(messageID networkid.MessageID) (*ParsedMessageID, error) {
@@ -75,20 +52,13 @@ func ParseMessageID(messageID networkid.MessageID) (*ParsedMessageID, error) {
 		if parts[0] == "fake" || strings.HasPrefix(parts[2], "FAKE::") {
 			return nil, fmt.Errorf("fake message ID")
 		}
-		chat, err := types.ParseJID(parts[0])
-		if err != nil {
-			return nil, err
-		}
-		sender, err := types.ParseJID(parts[1])
-		if err != nil {
-			return nil, err
-		}
+		chat := parts[0]
+		sender := parts[1]
 		return &ParsedMessageID{Chat: chat, Sender: sender, ID: parts[2]}, nil
-	} else {
-		return nil, fmt.Errorf("invalid message ID")
 	}
+	return nil, fmt.Errorf("invalid message ID format: %s", messageID)
 }
 
-func MakeMessageID(chat, sender types.JID, id types.MessageID) networkid.MessageID {
-	return networkid.MessageID(fmt.Sprintf("%s:%s:%s", chat.ToNonAD().String(), sender.ToNonAD().String(), id))
+func MakeMessageID(chat, sender string, id string) networkid.MessageID {
+	return networkid.MessageID(fmt.Sprintf("%s:%s:%s", chat, sender, id))
 }

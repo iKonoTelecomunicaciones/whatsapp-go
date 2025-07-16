@@ -27,100 +27,33 @@ import (
 	"github.com/iKonoTelecomunicaciones/go/format"
 	"github.com/iKonoTelecomunicaciones/go/id"
 	"github.com/rs/zerolog"
-	"go.mau.fi/util/ptr"
-	"go.mau.fi/util/random"
-	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/proto/waE2E"
-	"go.mau.fi/whatsmeow/types"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 )
 
-func (mc *MessageConverter) generateContextInfo(
-	ctx context.Context,
-	replyTo *database.Message,
-	portal *bridgev2.Portal,
-) *waE2E.ContextInfo {
-	contextInfo := &waE2E.ContextInfo{}
-	if replyTo != nil {
-		msgID, err := waid.ParseMessageID(replyTo.ID)
-		if err == nil {
-			contextInfo.StanzaID = proto.String(msgID.ID)
-			contextInfo.Participant = proto.String(msgID.Sender.String())
-			contextInfo.QuotedMessage = &waE2E.Message{Conversation: proto.String("")}
-		} else {
-			zerolog.Ctx(ctx).Warn().Err(err).
-				Stringer("reply_to_event_id", replyTo.MXID).
-				Str("reply_to_message_id", string(replyTo.ID)).
-				Msg("Failed to parse reply to message ID")
-		}
-	}
-	if portal.Disappear.Timer > 0 {
-		contextInfo.Expiration = ptr.Ptr(uint32(portal.Disappear.Timer.Seconds()))
-		setAt := portal.Metadata.(*waid.PortalMetadata).DisappearingTimerSetAt
-		if setAt > 0 {
-			contextInfo.EphemeralSettingTimestamp = ptr.Ptr(setAt)
-		}
-	}
-	return contextInfo
-}
-
 func (mc *MessageConverter) ToWhatsApp(
 	ctx context.Context,
-	client *whatsmeow.Client,
 	evt *event.Event,
 	content *event.MessageEventContent,
 	replyTo,
 	threadRoot *database.Message,
 	portal *bridgev2.Portal,
-) (*waE2E.Message, *whatsmeow.SendRequestExtra, error) {
-	ctx = context.WithValue(ctx, contextKeyClient, client)
+) (*bridgev2.MatrixMessage, error) {
 	ctx = context.WithValue(ctx, contextKeyPortal, portal)
 	if evt.Type == event.EventSticker {
 		content.MsgType = event.MessageType(event.EventSticker.Type)
 	}
 
-	message := &waE2E.Message{}
-	contextInfo := mc.generateContextInfo(ctx, replyTo, portal)
+	message := &bridgev2.MatrixMessage{}
 
 	switch content.MsgType {
 	case event.MsgText:
-		message = mc.constructTextMessage(ctx, content, contextInfo)
+		message = mc.constructTextMessage(ctx, content)
 	default:
-		return nil, nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMessageType, content.MsgType)
+		return nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMessageType, content.MsgType)
 	}
-	extra := &whatsmeow.SendRequestExtra{}
-	if portal.Metadata.(*waid.PortalMetadata).CommunityAnnouncementGroup {
-		if threadRoot != nil {
-			parsedID, err := waid.ParseMessageID(threadRoot.ID)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to parse message ID: %w", err)
-			}
-			rootMsgInfo := MessageIDToInfo(client, parsedID)
-			message, err = client.EncryptComment(ctx, rootMsgInfo, message)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to encrypt comment: %w", err)
-			}
-			lid := parsedID.Sender
-			if lid.Server == types.DefaultUserServer {
-				lid, err = client.Store.LIDs.GetLIDForPN(ctx, parsedID.Sender)
-				if err != nil {
-					return nil, nil, fmt.Errorf("failed to get LID for PN: %w", err)
-				}
-			}
-			extra.Meta = &types.MsgMetaInfo{
-				ThreadMessageID:        parsedID.ID,
-				ThreadMessageSenderJID: lid,
-				DeprecatedLIDSession:   ptr.Ptr(false),
-			}
-		} else {
-			message.MessageContextInfo = &waE2E.MessageContextInfo{
-				MessageSecret: random.Bytes(32),
-			}
-		}
-	}
-	return message, extra, nil
+
+	return message, nil
 }
 
 func (mc *MessageConverter) parseText(
@@ -143,19 +76,31 @@ func (mc *MessageConverter) parseText(
 func (mc *MessageConverter) constructTextMessage(
 	ctx context.Context,
 	content *event.MessageEventContent,
-	contextInfo *waE2E.ContextInfo,
-) *waE2E.Message {
+) *bridgev2.MatrixMessage {
 	text, mentions := mc.parseText(ctx, content)
-	if len(mentions) > 0 {
-		contextInfo.MentionedJID = mentions
+	if len(mentions) > 0 || len(text) > 0 {
+		zerolog.Ctx(ctx).Debug().
+			Strs("mentions", mentions).
+			Msg("Found mentions in text message")
 	}
-	etm := &waE2E.ExtendedTextMessage{
-		Text:        proto.String(text),
-		ContextInfo: contextInfo,
-	}
-	mc.convertURLPreviewToWhatsApp(ctx, content, etm)
 
-	return &waE2E.Message{ExtendedTextMessage: etm}
+	matrix_message := &bridgev2.MatrixMessage{
+		ThreadRoot: nil,
+		ReplyTo:    nil,
+	}
+
+	matrix_message.Event = &event.Event{
+		Type: event.EventMessage,
+	}
+
+	matrix_message.Content = &event.MessageEventContent{
+		MsgType:       event.MsgText,
+		Body:          text,
+		FormattedBody: content.FormattedBody,
+		Format:        content.Format,
+	}
+
+	return matrix_message
 }
 
 func (mc *MessageConverter) convertPill(
@@ -168,7 +113,7 @@ func (mc *MessageConverter) convertPill(
 	if allowedMentions != nil && !allowedMentions.Has(id.UserID(mxid)) {
 		return displayname
 	}
-	var jid types.JID
+	var jid string
 	ghost, err := mc.Bridge.GetGhostByMXID(ctx.Ctx, id.UserID(mxid))
 	if err != nil {
 		zerolog.Ctx(ctx.Ctx).Err(err).Str("mxid", mxid).Msg("Failed to get ghost for mention")
@@ -189,8 +134,8 @@ func (mc *MessageConverter) convertPill(
 		return displayname
 	}
 	mentions := ctx.ReturnData["output_mentions"].(*[]string)
-	*mentions = append(*mentions, jid.String())
-	return fmt.Sprintf("@%s", jid.User)
+	*mentions = append(*mentions, jid)
+	return fmt.Sprintf("@%s", jid)
 }
 
 type PaddedImage struct {

@@ -18,46 +18,24 @@ package msgconv
 
 import (
 	"context"
-	"encoding/base64"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/go/event"
-	"go.mau.fi/whatsmeow/proto/waE2E"
-	"google.golang.org/protobuf/proto"
 )
 
 func (mc *MessageConverter) convertTextMessage(
-	ctx context.Context, msg *waE2E.Message,
-) (part *bridgev2.ConvertedMessagePart, contextInfo *waE2E.ContextInfo) {
+	ctx context.Context, msg struct{ Text string },
+) (part *bridgev2.ConvertedMessagePart) {
 	part = &bridgev2.ConvertedMessagePart{
 		Type: event.EventMessage,
 		Content: &event.MessageEventContent{
 			MsgType: event.MsgText,
-			Body:    msg.GetConversation(),
+			Body:    msg.Text,
 		},
 	}
-	if len(msg.GetExtendedTextMessage().GetText()) > 0 {
-		part.Content.Body = msg.GetExtendedTextMessage().GetText()
+	if len(msg.Text) > 0 {
+		part.Content.Body = msg.Text
 	}
-	contextInfo = msg.GetExtendedTextMessage().GetContextInfo()
 	mc.parseFormatting(part.Content, false, false)
-	part.Content.BeeperLinkPreviews = mc.convertURLPreviewToBeeper(ctx, msg.GetExtendedTextMessage())
 	return
-}
-
-func (mc *MessageConverter) convertUnknownMessage(ctx context.Context, msg *waE2E.Message) (*bridgev2.ConvertedMessagePart, *waE2E.ContextInfo) {
-	data, _ := proto.Marshal(msg)
-	encodedMsg := base64.StdEncoding.EncodeToString(data)
-	extra := make(map[string]any)
-	if len(encodedMsg) < 16*1024 {
-		extra["fi.mau.whatsapp.unsupported_message_data"] = encodedMsg
-	}
-	return &bridgev2.ConvertedMessagePart{
-		Type: event.EventMessage,
-		Content: &event.MessageEventContent{
-			MsgType: event.MsgNotice,
-			Body:    "Unknown message type, please view it on the WhatsApp app",
-		},
-		Extra: extra,
-	}, nil
 }
