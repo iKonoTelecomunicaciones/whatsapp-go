@@ -32,33 +32,42 @@ type WaCloudLogin struct {
 	StartTime     time.Time
 	LoginError    error
 	LoginComplete *exsync.Event
+	Received515   *exsync.Event
 
 	Closed         atomic.Bool
 	EventHandlerID uint32
+
+	WabaID          string
+	BusinessPhoneID string
+	PageAccessToken string
+	AppName         string
 }
 
 // TODO: Implement the WaCloudLogin start method to initiate the login process.
 func (wl *WaCloudLogin) Start(ctx context.Context) (*bridgev2.LoginStep, error) {
-	wl.Log.Info().Msg("Starting ChatBox login process")
+	wl.Log.Info().Msg("Starting Bridge login process")
 
-	return nil, nil
+	return wl.Wait(ctx)
 }
 
 func (wl *WaCloudLogin) Wait(ctx context.Context) (*bridgev2.LoginStep, error) {
 	// Here we want to receive the login success event and create a user login from it.
 	// But now, we do not connect to WhatsApp yet so we set the newLoginID with the user mxid.
-	// Normally, this line should call the chatboxid.MakeUserLoginID(wl.LoginSuccess.ID)
-	newLoginID := networkid.UserLoginID(wl.User.MXID)
+	// Normally, this line should call the waid.MakeUserLoginID(wl.LoginSuccess.ID)
+	newLoginID := networkid.UserLoginID(wl.WabaID)
+
 	ul, err := wl.User.NewLogin(ctx, &database.UserLogin{
+		BridgeID:   wl.User.BridgeID,
 		ID:         newLoginID,
-		RemoteName: wl.User.MXID.String(),
+		RemoteName: string(newLoginID),
 		RemoteProfile: status.RemoteProfile{
-			Name: string(wl.User.BridgeID),
+			Name:  string(wl.AppName),
+			Phone: string(wl.BusinessPhoneID),
 		},
 		Metadata: &waid.UserLoginMetadata{
-			Timezone: wl.Timezone,
-
-			HistorySyncPortalsNeedCreating: false,
+			WabaID:          wl.WabaID,
+			BusinessPhoneID: wl.BusinessPhoneID,
+			PageAccessToken: wl.PageAccessToken,
 		},
 	}, &bridgev2.NewLoginParams{
 		DeleteOnConflict: true,

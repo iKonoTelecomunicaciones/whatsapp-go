@@ -66,3 +66,40 @@ func (whatsappClient *WhatsappCloudClient) GetUserInfo(
 
 	return &bridgev2.UserInfo{}, nil
 }
+
+func (whatsappClient *WhatsappCloudClient) getChatInfo(
+	ctx context.Context, portalID networkid.PortalID) (wrapped *bridgev2.ChatInfo, err error,
+) {
+	if portalID == "" {
+		return nil, fmt.Errorf("portalID cannot be empty")
+	}
+
+	Name := fmt.Sprintf("WhatsApp Cloud Portal: %s", portalID)
+
+	wrapped = &bridgev2.ChatInfo{
+		Name: &Name,
+	}
+
+	return wrapped, nil
+}
+
+func (whatsappClient *WhatsappCloudClient) GetChatInfo(
+	ctx context.Context, portal *bridgev2.Portal) (*bridgev2.ChatInfo, error,
+) {
+	if portal.ID == "" {
+		return nil, fmt.Errorf("portalID cannot be empty")
+	}
+	return whatsappClient.getChatInfo(ctx, portal.ID)
+}
+
+func (whatsappClient *WhatsappCloudClient) IsLoggedIn() bool {
+	return whatsappClient.UserLogin != nil && whatsappClient.UserLogin.Client.IsLoggedIn()
+}
+
+func (whatsappClient *WhatsappCloudClient) LogoutRemote(ctx context.Context) {
+	// Method to log out the user from the remote service.
+	if cli := whatsappClient.UserLogin.Client; cli != nil {
+		cli.Disconnect()
+	}
+	whatsappClient.UserLogin.Client = nil
+}
