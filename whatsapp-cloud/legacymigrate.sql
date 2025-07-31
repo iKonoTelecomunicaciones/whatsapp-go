@@ -56,15 +56,7 @@ SELECT
     false, -- in_space
     '{}' -- metadata
 FROM portal_old
-INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM puppet_old target
-    WHERE target.phone_id = portal_old.phone_id
-    AND target.app_business_id = portal_old.app_business_id
-) OR (
-    puppet_old.phone_id = portal_old.phone_id
-    AND puppet_old.app_business_id = portal_old.app_business_id
-);
+INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id;
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>>> Ghost <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO ghost (
@@ -98,15 +90,7 @@ SELECT
         'last_sync', 0
     ) -- metadata
 FROM portal_old
-INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM puppet_old target
-    WHERE target.phone_id = portal_old.phone_id
-    AND target.app_business_id = portal_old.app_business_id
-) OR (
-    puppet_old.phone_id = portal_old.phone_id
-    AND puppet_old.app_business_id = portal_old.app_business_id
-);
+INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id;
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> message <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO message (
