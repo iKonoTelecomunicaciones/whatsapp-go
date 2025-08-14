@@ -1,4 +1,4 @@
-package connector
+package cloudhandle
 
 import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/database"

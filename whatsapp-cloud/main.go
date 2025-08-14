@@ -6,7 +6,7 @@ import (
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/bridgeconfig"
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/matrix/mxmain"
-	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/cloudhandle"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb/upgrades"
 	"go.mau.fi/util/exhttp"
 )
@@ -19,7 +19,7 @@ var (
 	BuildTime = "unknown"
 )
 
-var whatsappConnector = &connector.WhatsappCloudConnector{}
+var whatsappConnector = &cloudhandle.WhatsappCloudConnector{}
 var brmain = mxmain.BridgeMain{
 	Name:        "whatsapp-cloud",
 	URL:         "https://github.com/iKonoTelecomunicaciones/whatsapp-go",
@@ -69,9 +69,9 @@ func main() {
 		if brmain.Matrix.AS.Router != nil {
 			// Register public endpoints for meta WhatsApp Cloud webhooks.
 			brmain.Matrix.AS.Router.
-				HandleFunc("/v1/cloud/receive", verifyConnection).Methods(http.MethodGet)
+				HandleFunc("/cloud/receive", verifyConnection).Methods(http.MethodGet)
 			brmain.Matrix.AS.Router.
-				HandleFunc("/v1/cloud/receive", receive).Methods(http.MethodPost)
+				HandleFunc("/cloud/receive", receive).Methods(http.MethodPost)
 		}
 
 		if brmain.Matrix.Provisioning != nil {

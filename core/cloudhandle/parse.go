@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package msgconv
+package cloudhandle
 
 import (
 	"fmt"
@@ -40,6 +40,8 @@ var waReplString = map[*regexp.Regexp]string{
 	inlineCodeRegex:    "$1<code>$2</code>$3",
 }
 
+// parseWASubFormattingLineToHTML converts a single line of WhatsApp-formatted text
+// (like bold, italic, etc.) into its HTML equivalent.
 func parseWASubFormattingLineToHTML(text string, allowInlineURL bool) string {
 	text = html.EscapeString(text)
 	for regex, replacement := range waReplString {
@@ -54,6 +56,8 @@ func parseWASubFormattingLineToHTML(text string, allowInlineURL bool) string {
 	return text
 }
 
+// parseWASubFormattingToHTML handles multi-line formatting, including lists and blockquotes,
+// converting the WhatsApp-formatted text block into HTML.
 func parseWASubFormattingToHTML(text string, allowInlineURL bool, output *strings.Builder) {
 	lines := strings.Split(text, "\n")
 	orderedListIdx := -1
@@ -131,6 +135,8 @@ func parseWASubFormattingToHTML(text string, allowInlineURL bool, output *string
 	}
 }
 
+// parseWAFormattingToHTML is the main parsing function that handles both inline formatting
+// and larger structures like code blocks, converting the entire text to HTML.
 func parseWAFormattingToHTML(text string, allowInlineURL bool) string {
 	var output strings.Builder
 	codeBlockPtr := 0
@@ -172,6 +178,8 @@ func parseWAFormattingToHTML(text string, allowInlineURL bool) string {
 	return output.String()
 }
 
+// parseFormatting takes a message content object and applies WhatsApp-to-HTML formatting.
+// It updates the content with an HTML-formatted body if any formatting is detected.
 func (mc *MessageConverter) parseFormatting(
 	content *event.MessageEventContent,
 	allowInlineURL,
