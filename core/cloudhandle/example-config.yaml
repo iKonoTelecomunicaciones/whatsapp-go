@@ -1,0 +1,39 @@
+# Device name that's shown in the "WhatsApp Web" section in the mobile app.
+os_name: WhatsApp-Cloud bridge
+
+# Displayname template for WhatsApp users.
+# {{.PushName}}     - nickname set by the WhatsApp user
+# {{.BusinessName}} - validated WhatsApp business name
+# {{.Phone}}        - phone number (international format)
+# {{.FullName}}     - Name you set in the contacts list
+displayname_template: "{{or .BusinessName .PushName .Phone}} (WA)"
+
+# Should sending WhatsApp status messages be allowed?
+# This can cause issues if the user has lots of contacts, so it's disabled by default.
+disable_status_broadcast_send: true
+
+# Default user level for the WhatsApp rooms.
+default_user_level: 9001
+
+# Default power levels for the WhatsApp rooms.
+# These are used when creating new rooms.
+# The values are the same as in the Matrix spec:
+default_power_levels:
+  events_default: 0
+  users_default: 0
+  state_default: 0
+  redact: 99
+  ban: 99
+  kick: 99
+  invite: 99
+
+# Default events levels for the WhatsApp rooms.
+# These are used when creating new rooms.
+# The values are the same as in the Matrix spec:
+default_events_levels:
+  reaction: 0
+  room_name: 0
+  room_avatar: 0
+  room_topic: 0
+  room_encryption: 99
+  room_tombstone: 99
