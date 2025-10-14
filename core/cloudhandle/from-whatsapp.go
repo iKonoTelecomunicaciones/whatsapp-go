@@ -64,7 +64,9 @@ func (mc *MessageConverter) ToMatrix(
 	isViewOnce bool,
 	previouslyConvertedPart *bridgev2.ConvertedMessagePart,
 ) *bridgev2.ConvertedMessage {
-	log := zerolog.Ctx(ctx).With().Str("MessageConverter", waMsg.Messages[0].ID).Logger()
+	message := waMsg.Messages[0]
+	log := zerolog.Ctx(ctx).With().Str("MessageConverter", message.ID).Logger()
+	log.Error().Msgf("Converting WhatsApp Cloud message: %s of type: %s", message.ID, message.Type)
 	ctx = context.WithValue(ctx, contextKeyClient, client)
 	ctx = context.WithValue(ctx, contextKeyIntent, intent)
 	ctx = context.WithValue(ctx, contextKeyPortal, portal)
@@ -73,9 +75,13 @@ func (mc *MessageConverter) ToMatrix(
 	var status_part *bridgev2.ConvertedMessagePart
 	var contextInfo *CloudMessageInfo
 
-	switch {
-	case waMsg.Messages[0].Text.Body != "":
+	switch message.Type {
+	case "text":
 		part, contextInfo = mc.convertTextMessage(ctx, waMsg)
+	case "image":
+		part, contextInfo = mc.convertMediaMessage(
+			ctx, waMsg, "image", client, intent, &portal.MXID,
+		)
 	default:
 		part, contextInfo = mc.convertUnknownMessage(ctx, waMsg)
 	}
