@@ -23,6 +23,7 @@ type WAMessageEvent struct {
 	parsedMessageType             string
 	isUndecryptableUpsertSubEvent bool
 	postHandle                    func()
+	preuploadedMXC                string
 }
 
 func (evt *MessageInfoWrapper) AddLogContext(c zerolog.Context) zerolog.Context {
@@ -43,6 +44,10 @@ func (evt *MessageInfoWrapper) GetSender() bridgev2.EventSender {
 }
 
 func (evt *WAMessageEvent) ConvertMessage(ctx context.Context, portal *bridgev2.Portal, intent bridgev2.MatrixAPI) (*bridgev2.ConvertedMessage, error) {
+	if evt.preuploadedMXC != "" {
+		ctx = context.WithValue(ctx, "preuploadedMXC", evt.preuploadedMXC)
+	}
+
 	converted := evt.whatsappClient.Main.MsgConv.ToMatrix(
 		ctx, portal, evt.whatsappClient, intent, &evt.Message, &evt.Info, evt.isViewOnce(), nil,
 	)

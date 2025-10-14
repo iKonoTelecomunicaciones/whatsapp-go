@@ -3,6 +3,7 @@ package cloudhandle
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
@@ -10,6 +11,9 @@ import (
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	"github.com/rs/zerolog"
 )
+
+var mediaTypes = []string{"image", "video", "audio", "document"}
+var validMessagesTypes = append([]string{"text"}, mediaTypes...)
 
 // Connect handles establishing the connection for the WhatsApp client.
 // Currently, this function is a stub and simply returns to satisfy the interface.
@@ -127,19 +131,42 @@ func (whatsappClient *WhatsappCloudClient) HandleCloudMessage(
 	log := zerolog.Ctx(ctx).With().Str("HandleCloudMessage", event.Object).Logger()
 	log.Info().Msgf("Received Whatsapp Cloud message event: %s", event)
 
-	messageData := event.Entry[0].Changes[0].Value.Messages[0]
-
-	if messageData.ID == "" {
-		log.Warn().Msg("Ignoring event because the message data is empty")
-		return fmt.Errorf("ignoring event because the message data is empty")
+	if len(event.Entry) > 1 {
+		log.Warn().Msg("Ignoring event because it contains multiple entries")
+		return fmt.Errorf("ignoring event because it contains multiple entries")
 	}
 
-	messageType := messageData.Type
-	messageID := messageData.ID
+	eventEntry := event.Entry[0]
 
-	var eventToQueue bridgev2.RemoteEvent
-	switch messageType {
-	case "text":
+	if len(eventEntry.Changes) > 1 {
+		log.Warn().Msg("Ignoring event because it contains multiple changes")
+		return fmt.Errorf("ignoring event because it contains multiple changes")
+	}
+
+	eventChange := eventEntry.Changes[0]
+
+	if eventChange.Value.Messages == nil || len(eventChange.Value.Messages) == 0 {
+		log.Warn().Msg("Ignoring event because it contains no messages")
+		return fmt.Errorf("ignoring event because it contains no messages")
+	}
+
+	messages := eventChange.Value.Messages
+
+	for _, messageData := range messages {
+		log.Info().Msgf(
+			"Processing message ID: %s of type: %s",
+			messageData.ID, messageData.Type,
+		)
+
+		if messageData.ID == "" {
+			log.Warn().Msg("Ignoring event because the message data is empty")
+			return fmt.Errorf("ignoring event because the message data is empty")
+		}
+
+		messageType := messageData.Type
+		messageID := messageData.ID
+
+		var eventToQueue bridgev2.RemoteEvent
 		messageInfo := CloudMessageInfo{
 			ID:     messageID,
 			Type:   messageType,
@@ -158,20 +185,31 @@ func (whatsappClient *WhatsappCloudClient) HandleCloudMessage(
 				Info:           messageInfo,
 				whatsappClient: whatsappClient,
 			},
-			Message:  event.Entry[0].Changes[0].Value,
+			Message:  eventChange.Value,
 			MsgEvent: event,
-
-			parsedMessageType: event.Entry[0].Changes[0].Value.Messages[0].Text.Body,
 		}
-		// Queue the event for further processing
-	default:
-		log.Warn().Msgf("Unsupported message type: %s", messageType)
-		return fmt.Errorf("unsupported message type: %s", messageType)
-	}
 
-	log.Info().Msgf("Queued event for processing: %s", messageID)
-	whatsappClient.QueueEvent(ctx, eventToQueue, portal)
-	log.Info().Msg("Successfully handled cloud message event")
+		log.Error().Msgf("messageType: %v", messageType)
+
+		if !slices.Contains(validMessagesTypes, messageType) {
+			log.Warn().Msgf("Unsupported message type: %s", messageType)
+			return fmt.Errorf("unsupported message type: %s", messageType)
+		}
+
+		log.Info().Msgf("Queued event for processing: %s", messageID)
+		switch {
+		case messageType == "text":
+			whatsappClient.QueueEvent(ctx, eventToQueue, messageData, portal)
+		case slices.Contains(mediaTypes, messageType):
+			whatsappClient.QueueMediaEvent(ctx, eventToQueue, messageData, portal)
+		default:
+			log.Warn().Msgf("Ignoring unsupported message type: %s", messageType)
+			return fmt.Errorf("ignoring unsupported message type: %s", messageType)
+		}
+
+		log.Info().Msg("Successfully handled cloud message event")
+
+	}
 
 	// Return nil to indicate successful handling
 	return nil
