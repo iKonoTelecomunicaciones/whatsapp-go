@@ -36,7 +36,7 @@ INSERT INTO portal (
     metadata
 )
 SELECT
-    portal_old.app_business_id || '@s.whatsapp.net', -- id
+    portal_old.phone_id || '@s.whatsapp.net', -- id
     portal_old.phone_id, -- other_user_id
     puppet_old.custom_mxid, -- mxid
     portal_old.app_business_id, -- relay_login_id
@@ -110,7 +110,7 @@ INSERT INTO message (
 SELECT
     whatsapp_message_id, -- id
     event_mxid, -- mxid
-    app_business_id || '@s.whatsapp.net', -- room_id
+    phone_id || '@s.whatsapp.net', -- room_id
     app_business_id, -- room_receiver
     phone_id, -- sender_id
     sender, -- sender_mxid
@@ -172,7 +172,7 @@ INSERT INTO user_portal (
 SELECT
     relay_user_id, -- mxid
     app_business_id, -- login_id
-    app_business_id || '@s.whatsapp.net', -- portal_id
+    phone_id || '@s.whatsapp.net', -- portal_id
     false, -- in_space
     false, -- preferred
     app_business_id, -- portal_receiver
