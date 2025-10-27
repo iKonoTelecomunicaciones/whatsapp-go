@@ -16,7 +16,3 @@ SELECT
     COALESCE(encryption::jsonb, '{}'::jsonb),
     COALESCE(has_full_member_list, false)
 FROM mx_room_state_old;
-
-DROP TABLE IF EXISTS mx_user_profile_old;
-DROP TABLE IF EXISTS mx_room_state_old;
-DROP TYPE IF EXISTS membership_old;

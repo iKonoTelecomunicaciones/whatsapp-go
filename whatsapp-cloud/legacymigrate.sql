@@ -42,7 +42,7 @@ SELECT
     portal_old.app_business_id, -- relay_login_id
     portal_old.app_business_id, -- receiver
     'dm', -- room_type
-    display_name, -- name
+    puppet_old.display_name, -- name
     false, -- name_is_custom
     true, -- name_set
     false, -- avatar_set
@@ -213,11 +213,5 @@ INNER JOIN portal_old on reaction_old.room_id = portal_old.mxid
 WHERE event_mxid<>'' AND whatsapp_message_id<>'' AND reaction<>'';
 
 
--- >>>>>>>>>>>>>>>>>>>>>>>>>>> Delete the old tables <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-DROP TABLE matrix_user_old;
-DROP TABLE puppet_old;
-DROP TABLE mx_version_old;
-DROP TABLE reaction_old;
-DROP TABLE message_old;
-DROP TABLE portal_old;
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>> Delete the old membership type <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 DROP TYPE IF EXISTS membership;
