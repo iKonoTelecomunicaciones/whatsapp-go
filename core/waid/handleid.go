@@ -1,0 +1,64 @@
+package waid
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
+)
+
+const LIDPrefix = "lid-"
+const BotPrefix = "bot-"
+
+type ParsedMessageID struct {
+	Chat   string
+	Sender string
+	ID     string
+}
+
+func MakePortalID(jid string) networkid.PortalID {
+	return networkid.PortalID(jid)
+}
+
+func ParseUserID(user networkid.UserID) string {
+	if strings.HasPrefix(string(user), LIDPrefix) {
+		return strings.TrimPrefix(string(user), LIDPrefix)
+	} else if strings.HasPrefix(string(user), BotPrefix) {
+		return strings.TrimPrefix(string(user), BotPrefix)
+	}
+	return string(user)
+}
+
+func MakeUserID(user string) networkid.UserID {
+	return networkid.UserID(user)
+}
+
+func ParsePortalID(portal networkid.PortalID) (string, error) {
+	return string(portal), nil
+}
+
+func MakeUserLoginID(user string) networkid.UserLoginID {
+	return networkid.UserLoginID(user)
+}
+
+func ParseUserLoginID(user networkid.UserLoginID, deviceID uint16) string {
+
+	return string(user)
+}
+
+func ParseMessageID(messageID networkid.MessageID) (*ParsedMessageID, error) {
+	parts := strings.SplitN(string(messageID), ":", 3)
+	if len(parts) == 3 {
+		if parts[0] == "fake" || strings.HasPrefix(parts[2], "FAKE::") {
+			return nil, fmt.Errorf("fake message ID")
+		}
+		chat := parts[0]
+		sender := parts[1]
+		return &ParsedMessageID{Chat: chat, Sender: sender, ID: parts[2]}, nil
+	}
+	return nil, fmt.Errorf("invalid message ID format: %s", messageID)
+}
+
+func MakeMessageID(chat, sender string, id string) networkid.MessageID {
+	return networkid.MessageID(fmt.Sprintf("%s:%s:%s", chat, sender, id))
+}
