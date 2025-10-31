@@ -8,6 +8,7 @@ import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/matrix/mxmain"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb/upgrades"
+	"go.mau.fi/util/exhttp"
 )
 
 // Information to find out exactly which commit the bridge was built from.
@@ -25,6 +26,10 @@ var brmain = mxmain.BridgeMain{
 	Description: "A WhatsApp Cloud puppeting bridge.",
 	Version:     "v0.2.14",
 	Connector:   whatsappConnector,
+}
+
+func jsonResponse(w http.ResponseWriter, status int, detail map[string]interface{}) {
+	exhttp.WriteJSONResponse(w, status, Response{Detail: detail})
 }
 
 func main() {
@@ -61,13 +66,19 @@ func main() {
 			)
 		}
 
+		if brmain.Matrix.AS.Router != nil {
+			// Register public endpoints for meta WhatsApp Cloud webhooks.
+			brmain.Matrix.AS.Router.
+				HandleFunc("/v1/cloud/receive", verifyConnection).Methods(http.MethodGet)
+			brmain.Matrix.AS.Router.
+				HandleFunc("/v1/cloud/receive", receive).Methods(http.MethodPost)
+		}
+
 		if brmain.Matrix.Provisioning != nil {
-			brmain.Matrix.Provisioning.Router.HandleFunc(
-				"/v1/receive", legacyProvReceive,
-			).Methods(http.MethodGet)
-			brmain.Matrix.Provisioning.Router.HandleFunc(
-				"/v1/receive", legacyProvVerifyConnection,
-			).Methods(http.MethodPost)
+			// Register provisioning endpoints for meta WhatsApp Cloud.
+			brmain.Matrix.Provisioning.Router.
+				HandleFunc("/v1/register_app", registerApp).Methods(http.MethodPost)
+
 		}
 	}
 	brmain.InitVersion(Tag, Commit, BuildTime)

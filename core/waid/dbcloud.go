@@ -17,41 +17,21 @@
 package waid
 
 import (
-	"crypto/ecdh"
-	"crypto/rand"
 	"encoding/json"
 
-	"go.mau.fi/util/exerrors"
 	"go.mau.fi/util/jsontime"
-	"go.mau.fi/util/random"
 )
 
 type UserLoginMetadata struct {
-	WADeviceID      uint16        `json:"wa_device_id"`
-	WALID           string        `json:"wa_lid"`
-	PhoneLastSeen   jsontime.Unix `json:"phone_last_seen"`
-	PhoneLastPinged jsontime.Unix `json:"phone_last_pinged"`
-	Timezone        string        `json:"timezone"`
-	PushKeys        *PushKeys     `json:"push_keys,omitempty"`
-	APNSEncPubKey   []byte        `json:"apns_enc_pubkey,omitempty"`
-	APNSEncPrivKey  []byte        `json:"apns_enc_privkey,omitempty"`
-
-	HistorySyncPortalsNeedCreating bool `json:"history_sync_portals_need_creating,omitempty"`
+	WabaID          string `json:"waba_id"`
+	BusinessPhoneID string `json:"business_phone_id"`
+	PageAccessToken string `json:"page_access_token"`
 }
 
 type PushKeys struct {
 	P256DH  []byte `json:"p256dh"`
 	Auth    []byte `json:"auth"`
 	Private []byte `json:"private"`
-}
-
-func (m *UserLoginMetadata) GeneratePushKeys() {
-	privateKey := exerrors.Must(ecdh.P256().GenerateKey(rand.Reader))
-	m.PushKeys = &PushKeys{
-		P256DH:  privateKey.Public().(*ecdh.PublicKey).Bytes(),
-		Auth:    random.Bytes(16),
-		Private: privateKey.Bytes(),
-	}
 }
 
 type MessageErrorType string

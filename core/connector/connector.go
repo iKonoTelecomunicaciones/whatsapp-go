@@ -3,12 +3,12 @@ package connector
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/msgconv"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	"go.mau.fi/util/exsync"
 )
 
@@ -21,9 +21,6 @@ type WhatsappCloudConnector struct {
 	DB      *whatsappclouddb.Database
 
 	firstClientConnectOnce sync.Once
-
-	mediaEditCacheLock     sync.RWMutex
-	stopMediaEditCacheLoop atomic.Pointer[context.CancelFunc]
 }
 
 func (whatsappConnector *WhatsappCloudConnector) SetMaxFileSize(maxSize int64) {
@@ -37,7 +34,7 @@ func (whatsappConnector *WhatsappCloudConnector) GetName() bridgev2.BridgeName {
 		NetworkIcon:          "mxc://maunium.net/NeXNQarUbrlYBiPCpprYsRqr",
 		NetworkID:            "whatsapp-cloud",
 		BeeperBridgeType:     "whatsapp-cloud",
-		DefaultPort:          29342,
+		DefaultPort:          29340,
 		DefaultCommandPrefix: "!wb",
 	}
 }
@@ -78,7 +75,13 @@ func (whatsappConnector *WhatsappCloudConnector) GetCapabilities() *bridgev2.Net
 
 // GetLoginFlows implements the required method for the NetworkConnector interface.
 func (whatsappConnector *WhatsappCloudConnector) GetLoginFlows() []bridgev2.LoginFlow {
-	return []bridgev2.LoginFlow{}
+	return []bridgev2.LoginFlow{
+		{
+			Name:        "Whatsapp Cloud Login",
+			Description: "Login to WhatsApp Cloud using META's login flow.",
+			ID:          "whatsapp-cloud-login",
+		},
+	}
 }
 
 func (whatsappConnector *WhatsappCloudConnector) CreateLogin(
@@ -94,12 +97,43 @@ func (whatsappConnector *WhatsappCloudConnector) CreateLogin(
 			Logger(),
 
 		LoginComplete: exsync.NewEvent(),
+		Received515:   exsync.NewEvent(),
+	}, nil
+}
+
+func (whatsappConnector *WhatsappCloudConnector) CreateAppLogin(
+	_ context.Context,
+	user *bridgev2.User,
+	body types.CloudRegisterAppRequest,
+) (bridgev2.LoginProcess, error) {
+	return &WaCloudLogin{
+		User: user,
+		Main: whatsappConnector,
+		Log: user.Log.With().
+			Str("action", "login").
+			Logger(),
+
+		LoginComplete:   exsync.NewEvent(),
+		Received515:     exsync.NewEvent(),
+		WabaID:          body.WabaID,
+		BusinessPhoneID: body.AppPhoneID,
+		PageAccessToken: body.AccessToken,
+		AppName:         body.AppName,
 	}, nil
 }
 
 func (whatsappConnector *WhatsappCloudConnector) LoadUserLogin(
 	_ context.Context, login *bridgev2.UserLogin,
 ) error {
-	// TODO: Edit this to load the user login from the database.
+	wClient := &WhatsappCloudClient{
+		Main:      whatsappConnector,
+		UserLogin: login,
+	}
+
+	log := wClient.UserLogin.Log.With().Str("component", "WhatsAppCloudClient").Logger()
+	log.Info().Msg("Loading WhatsApp Cloud client for user")
+
+	login.Client = wClient
+
 	return nil
 }
