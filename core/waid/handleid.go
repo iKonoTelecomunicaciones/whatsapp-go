@@ -16,8 +16,15 @@ type ParsedMessageID struct {
 	ID     string
 }
 
-func MakePortalID(jid string) networkid.PortalID {
-	return networkid.PortalID(jid)
+func MakePortalID(id string) networkid.PortalID {
+	return networkid.PortalID(id)
+}
+
+func MakePortalKey(id string) networkid.PortalKey {
+	return networkid.PortalKey{
+		ID:       networkid.PortalID(id + "@s.whatsapp.net"),
+		Receiver: networkid.UserLoginID(id),
+	}
 }
 
 func ParseUserID(user networkid.UserID) string {

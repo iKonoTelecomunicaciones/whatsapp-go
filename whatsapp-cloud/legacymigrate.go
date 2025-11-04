@@ -40,7 +40,7 @@ func migrateLegacyConfig(helper configupgrade.Helper) {
 	bridgeconfig.CopyToOtherLocation(
 		helper,
 		configupgrade.Str,
-		[]string{"chatbox", "user_powerlevel"},
+		[]string{"whatsapp-cloud", "user_powerlevel"},
 		[]string{"network", "user_powerlevel"},
 	)
 	bridgeconfig.CopyToOtherLocation(

@@ -10,13 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type MediaRequestMethod string
-
-const (
-	MediaRequestMethodImmediate MediaRequestMethod = "immediate"
-	MediaRequestMethodLocalTime MediaRequestMethod = "local_time"
-)
-
 //go:embed example-config.yaml
 var ExampleConfig string
 
