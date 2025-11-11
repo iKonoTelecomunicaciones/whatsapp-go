@@ -22,8 +22,55 @@ import (
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/go/event"
+	"github.com/iKonoTelecomunicaciones/go/id"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
+	"github.com/rs/zerolog"
 )
+
+func (mc *MessageConverter) convertMediaMessage(
+	ctx context.Context,
+	msg *types.CloudValue,
+	typeName string,
+	client *WhatsappCloudClient,
+	intent bridgev2.MatrixAPI,
+	roomID *id.RoomID,
+) (part *bridgev2.ConvertedMessagePart, contextInfo *CloudMessageInfo) {
+	log := zerolog.Ctx(ctx).With().Str("ConvertMediaMessage", msg.Messages[0].ID).Logger()
+	if msg.Messages == nil || len(msg.Messages) == 0 || len(msg.Messages) > 1 {
+		log.Warn().Msg("No messages found in CloudValue or multiple messages found")
+		return nil, nil
+	}
+
+	if msg.Contacts == nil || len(msg.Contacts) == 0 || len(msg.Contacts) > 1 {
+		log.Warn().Msg("No contacts found in CloudValue or multiple contacts found")
+		return nil, nil
+	}
+
+	var mxcURL string
+
+	if preuploadedMXC := ctx.Value("preuploadedMXC"); preuploadedMXC != nil {
+		mxcURL = preuploadedMXC.(string)
+		log.Info().Str("mxc_url", mxcURL).Msg("Using preuploadedMXC from context")
+	} else {
+		log.Warn().Msg("No preuploadedMXC found in context, media will not be available")
+		return nil, nil
+	}
+
+	preparedMedia := prepareMediaMessage(msg)
+	preparedMedia.TypeDescription = typeName
+	preparedMedia.URL = id.ContentURIString(mxcURL)
+
+	if preparedMedia.FileName != "" && preparedMedia.Body != preparedMedia.FileName {
+		mc.parseFormatting(preparedMedia.MessageEventContent, false, false)
+	}
+	contextInfo = preparedMedia.ContextInfo
+	part = &bridgev2.ConvertedMessagePart{
+		Type:    event.EventMessage,
+		Content: preparedMedia.MessageEventContent,
+	}
+
+	return
+}
 
 // convertTextMessage converts a WhatsApp Cloud API text message into a bridge-compatible format.
 // It extracts the message body, timestamp, sender information, and other metadata.

@@ -5,22 +5,30 @@ type CloudMetaData struct {
 	PhoneNumberID      string `json:"phone_number_id"`
 }
 
-type CloudContacts []struct {
+type CloudContact struct {
 	Profile struct {
 		Name string `json:"name"`
 	} `json:"profile"`
 	WaID string `json:"wa_id"`
 }
 
-type CloudMessages []struct {
+type ImageCloud struct {
+	ID       string  `json:"id"`
+	MimeType string  `json:"mime_type"`
+	SHA256   string  `json:"sha256"`
+	Caption  *string `json:"caption"`
+}
+
+type CloudMessage struct {
 	From string `json:"from"`
 	ID   string `json:"id"`
 	Type string `json:"type"`
-	Text struct {
+	Text *struct {
 		Body string `json:"body"`
 	} `json:"text"`
-	TimeStamp string `json:"timestamp"`
-	Context   struct {
+	Image     *ImageCloud `json:"image"`
+	TimeStamp string      `json:"timestamp"`
+	Context   *struct {
 		From string `json:"from"`
 		To   string `json:"to"`
 	} `json:"context"`
@@ -44,11 +52,11 @@ type CloudStatuses []struct {
 }
 
 type CloudValue struct {
-	MessagingProduct string        `json:"messaging_product"`
-	Metadata         CloudMetaData `json:"metadata"`
-	Contacts         CloudContacts `json:"contacts"`
-	Messages         CloudMessages `json:"messages"`
-	Statuses         CloudStatuses `json:"statuses"`
+	MessagingProduct string         `json:"messaging_product"`
+	Metadata         CloudMetaData  `json:"metadata"`
+	Contacts         []CloudContact `json:"contacts"`
+	Messages         []CloudMessage `json:"messages"`
+	Statuses         *CloudStatuses `json:"statuses"`
 }
 
 type CloudEvent struct {
@@ -90,4 +98,25 @@ type CloudMessageResponse struct {
 	Contacts         ContactsResponse `json:"contacts"`
 	Messages         MessagesResponse `json:"messages"`
 	MessagingProduct string           `json:"messaging_product"`
+}
+
+type CloudMediaResponse struct {
+	ID               string `json:"id"`
+	MessagingProduct string `json:"messaging_product"`
+	URL              string `json:"url"`
+	MimeType         string `json:"mime_type"`
+	Hash             string `json:"hash"`
+	FileSize         int    `json:"file_size"`
+}
+
+type FileInfo struct {
+	Size     int
+	MimeType string
+}
+
+type MediaResponse struct {
+	FileName *string
+	Url      string
+	FileInfo *FileInfo
+	Caption  *string
 }
