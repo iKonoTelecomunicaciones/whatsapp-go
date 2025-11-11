@@ -41,7 +41,6 @@ func (mc *MessageConverter) ToWhatsApp(
 	threadRoot *database.Message,
 	portal *bridgev2.Portal,
 ) (*bridgev2.MatrixMessage, error) {
-	ctx = context.WithValue(ctx, contextKeyPortal, portal)
 	if evt.Type == event.EventSticker {
 		content.MsgType = event.MessageType(event.EventSticker.Type)
 	}
@@ -50,7 +49,7 @@ func (mc *MessageConverter) ToWhatsApp(
 
 	switch content.MsgType {
 	case event.MsgText:
-		message = mc.constructTextMessage(ctx, content)
+		message = mc.constructTextMessage(ctx, content, evt, portal)
 	default:
 		return nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMessageType, content.MsgType)
 	}
@@ -82,6 +81,8 @@ func (mc *MessageConverter) parseText(
 func (mc *MessageConverter) constructTextMessage(
 	ctx context.Context,
 	content *event.MessageEventContent,
+	evt *event.Event,
+	portal *bridgev2.Portal,
 ) *bridgev2.MatrixMessage {
 	text, mentions := mc.parseText(ctx, content)
 	if len(mentions) > 0 || len(text) > 0 {
@@ -90,21 +91,11 @@ func (mc *MessageConverter) constructTextMessage(
 			Msg("Found mentions in text message")
 	}
 
-	matrix_message := &bridgev2.MatrixMessage{
-		ThreadRoot: nil,
-		ReplyTo:    nil,
-	}
-
-	matrix_message.Event = &event.Event{
-		Type: event.EventMessage,
-	}
-
-	matrix_message.Content = &event.MessageEventContent{
-		MsgType:       event.MsgText,
-		Body:          text,
-		FormattedBody: content.FormattedBody,
-		Format:        content.Format,
-	}
+	content.Body = text
+	matrix_message := &bridgev2.MatrixMessage{}
+	matrix_message.Event = evt
+	matrix_message.Portal = portal
+	matrix_message.Content = content
 
 	return matrix_message
 }

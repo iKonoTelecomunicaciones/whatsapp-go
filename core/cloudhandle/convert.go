@@ -21,11 +21,8 @@ import (
 	"time"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
-	"github.com/iKonoTelecomunicaciones/go/bridgev2/database"
-	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
 	"github.com/iKonoTelecomunicaciones/go/event"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
-	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 )
 
 // convertTextMessage converts a WhatsApp Cloud API text message into a bridge-compatible format.
@@ -75,29 +72,5 @@ func (mc *MessageConverter) convertUnknownMessage(
 			MsgType: event.MsgNotice,
 			Body:    "Unknown message type, please view it on the WhatsApp app",
 		},
-	}, nil
-}
-
-// handleConvertedMatrixMessage takes a message that has been converted from a Matrix event
-// and sends it to WhatsApp. This is currently a placeholder and needs to be implemented.
-func (whatsappClient *WhatsappCloudClient) handleConvertedMatrixMessage(
-	ctx context.Context,
-	msg *bridgev2.MatrixMessage,
-) (*bridgev2.MatrixMessageResponse, error) {
-
-	// TODO: Send the message to WhatsApp
-	var pickedMessageID networkid.MessageID
-
-	return &bridgev2.MatrixMessageResponse{
-		DB: &database.Message{
-			ID:        pickedMessageID,
-			SenderID:  waid.MakeUserID(""),
-			Timestamp: time.Now(),
-			Metadata: &waid.MessageMetadata{
-				SenderDeviceID: 0,
-			},
-		},
-		StreamOrder:   time.Now().Unix(),
-		RemovePending: networkid.TransactionID(pickedMessageID),
 	}, nil
 }
