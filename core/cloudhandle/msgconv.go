@@ -14,42 +14,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package msgconv
+package cloudhandle
 
 import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/go/format"
-
-	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb"
 )
 
-type AnimatedStickerConfig struct {
-	Target string `yaml:"target"`
-	Args   struct {
-		Width  int `yaml:"width"`
-		Height int `yaml:"height"`
-		FPS    int `yaml:"fps"`
-	} `yaml:"args"`
-}
-
-type MessageConverter struct {
-	Bridge                *bridgev2.Bridge
-	DB                    *whatsappclouddb.Database
-	MaxFileSize           int64
-	HTMLParser            *format.HTMLParser
-	AnimatedStickerConfig AnimatedStickerConfig
-	FetchURLPreviews      bool
-	ExtEvPolls            bool
-	DisableViewOnce       bool
-	DirectMedia           bool
-	OldMediaSuffix        string
-}
-
-func New(br *bridgev2.Bridge) *MessageConverter {
+func NewMessageConverter(br *bridgev2.Bridge) *MessageConverter {
 	mc := &MessageConverter{
 		Bridge:      br,
-		MaxFileSize: 50 * 1024 * 1024,
+		MaxFileSize: 50 * 1024 * 1024, // 50
 	}
+
 	mc.HTMLParser = &format.HTMLParser{
 		PillConverter: mc.convertPill,
 		Newline:       "\n",
@@ -70,5 +47,6 @@ func New(br *bridgev2.Bridge) *MessageConverter {
 			return "```\n" + code + "\n```"
 		},
 	}
+
 	return mc
 }

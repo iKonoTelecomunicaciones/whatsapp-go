@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/iKonoTelecomunicaciones/go/id"
-	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/cloudhandle"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	"github.com/rs/zerolog/hlog"
 )
@@ -96,7 +96,7 @@ func startRegistration(
 	}
 
 	log.Debug().Msg("Creating login for WhatsApp app")
-	waLogin := login.(*connector.WaCloudLogin)
+	waLogin := login.(*cloudhandle.WaCloudLogin)
 	waLogin.Timezone = r.URL.Query().Get("tz")
 
 	_, err = waLogin.Start(r.Context())

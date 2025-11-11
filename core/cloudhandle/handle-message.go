@@ -14,35 +14,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package msgconv
+package cloudhandle
 
 import (
-	"context"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-
-	"github.com/iKonoTelecomunicaciones/go/bridgev2"
-	"github.com/iKonoTelecomunicaciones/go/event"
-	_ "golang.org/x/image/webp"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 )
 
-type contextKey int
-
-const (
-	contextKeyClient contextKey = iota
-	contextKeyIntent
-	contextKeyPortal
-)
-
-func getPortal(ctx context.Context) *bridgev2.Portal {
-	return ctx.Value(contextKeyPortal).(*bridgev2.Portal)
+type ParsedMessageID = struct {
+	MessageSource struct {
+		Chat   string
+		Sender string
+	}
+	ID string
 }
 
-var failedCommentPart = &bridgev2.ConvertedMessagePart{
-	Type: event.EventMessage,
-	Content: &event.MessageEventContent{
-		Body:    "Failed to decrypt comment",
-		MsgType: event.MsgNotice,
-	},
+func MessageIDToInfo(parsedMsgID *waid.ParsedMessageID) ParsedMessageID {
+	return ParsedMessageID{
+		MessageSource: struct {
+			Chat   string
+			Sender string
+		}{
+			Chat:   parsedMsgID.Chat,
+			Sender: parsedMsgID.Sender,
+		},
+		ID: parsedMsgID.ID,
+	}
 }

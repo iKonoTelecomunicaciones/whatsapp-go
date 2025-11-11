@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iKonoTelecomunicaciones/go/bridgev2/matrix/mxmain"
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 )
 
 const LIDPrefix = "lid-"
@@ -38,6 +40,24 @@ func ParseUserID(user networkid.UserID) string {
 
 func MakeUserID(user string) networkid.UserID {
 	return networkid.UserID(user)
+}
+
+func MakeUserKeyUsingBody(body types.CloudEvent, domain string, brmain mxmain.BridgeMain) types.UserKey {
+	name := body.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
+	userID := body.Entry[0].Changes[0].Value.Contacts[0].WaID
+	userName := brmain.Config.AppService.FormatUsername(userID)
+	userKey := MakeUserKey(name, userName, userID, domain)
+
+	return userKey
+}
+
+func MakeUserKey(name string, userName string, userID string, domain string) types.UserKey {
+	userMXID := fmt.Sprintf("@%s:%s", userName, domain)
+	return types.UserKey{
+		Name: name,
+		ID:   networkid.UserID(userID),
+		MXID: userMXID,
+	}
 }
 
 func ParsePortalID(portal networkid.PortalID) (string, error) {

@@ -1,4 +1,4 @@
-package connector
+package cloudhandle
 
 import (
 	"context"
@@ -43,13 +43,15 @@ type WaCloudLogin struct {
 	AppName         string
 }
 
-// TODO: Implement the WaCloudLogin start method to initiate the login process.
+// Start initiates the login process for the WhatsApp Cloud bridge.
 func (wl *WaCloudLogin) Start(ctx context.Context) (*bridgev2.LoginStep, error) {
 	wl.Log.Info().Msg("Starting Bridge login process")
 
 	return wl.Wait(ctx)
 }
 
+// Wait handles the creation of the user login session after the initial parameters have been set.
+// It creates a new user login in the database with the provided WABA ID and other details.
 func (wl *WaCloudLogin) Wait(ctx context.Context) (*bridgev2.LoginStep, error) {
 	// Here we want to receive the login success event and create a user login from it.
 	// But now, we do not connect to WhatsApp yet so we set the newLoginID with the user mxid.
@@ -88,10 +90,13 @@ func (wl *WaCloudLogin) Wait(ctx context.Context) (*bridgev2.LoginStep, error) {
 	}, nil
 }
 
+// Cancel stops the login process and marks it as closed.
 func (wl *WaCloudLogin) Cancel() {
 	wl.Closed.Store(true)
 }
 
+// StartWithOverride begins the login process, but uses information from a previous
+// login session to potentially auto-fill some details, like the phone number for a re-login.
 func (wl *WaCloudLogin) StartWithOverride(
 	ctx context.Context, old *bridgev2.UserLogin,
 ) (*bridgev2.LoginStep, error) {
@@ -108,6 +113,8 @@ func (wl *WaCloudLogin) StartWithOverride(
 	return step, err
 }
 
+// SubmitUserInput handles input provided by the user during an interactive login flow.
+// This is currently a placeholder.
 func (wl *WaCloudLogin) SubmitUserInput(
 	ctx context.Context, input map[string]string,
 ) (*bridgev2.LoginStep, error) {

@@ -2,15 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
+	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 	"github.com/rs/zerolog/hlog"
 )
 
 func receive(w http.ResponseWriter, r *http.Request) {
 	// This endpoint is used to receive provision requests from Meta WhatsApp Cloud.
 	// It checks if the request is valid and then processes the event accordingly.
+	hlog.FromRequest(r).Info().Msg("Received event from WhatsApp Cloud")
+
 	var body types.CloudEvent
 	ctx := r.Context()
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -23,7 +28,6 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hlog.FromRequest(r).Info().Msg("Received event from WhatsApp Cloud")
 	hlog.FromRequest(r).Info().Interface("body", body).Msg("Event body: ")
 
 	// Get the business id and the value of the event
@@ -55,7 +59,19 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//Validate if the event is a not a message.
+	userLogin, err := brmain.Bridge.GetExistingUserLoginByID(
+		ctx, networkid.UserLoginID(wb_business_id),
+	)
+
+	if userLogin == nil {
+		hlog.FromRequest(r).Error().Msg("User login not found for request")
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"message": "User login not found for request",
+		})
+		return
+	}
+
+	//Validate if the event is not a message.
 	if wb_value.Messages == nil {
 		hlog.FromRequest(r).Warn().Msgf(
 			"Ignoring event because the integration type is not supported.",
@@ -63,15 +79,37 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, http.StatusOK, map[string]interface{}{
 			"message": "Integration type not supported. Only messages are supported.",
 		})
+		return
 	}
 
-	handleErr := whatsappConnector.HandleCloudEvent(ctx, wb_business_id, wb_value, body)
+	domain := brmain.Config.Homeserver.Domain
+	userKey := waid.MakeUserKeyUsingBody(body, domain, brmain)
+	portal, err := whatsappConnector.GetPortal(ctx, userLogin, brmain, userKey)
 
-	if handleErr != nil {
-		hlog.FromRequest(r).Error().Interface(
-			"error", handleErr,
-		).Msg("Error while handling cloud event")
-		jsonResponse(w, http.StatusOK, handleErr)
+	if err != nil {
+		hlog.FromRequest(r).Error().Err(err).Msg("Error while getting portal")
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"message": "Error while getting portal",
+		})
+		return
+	}
+
+	if portal == nil {
+		hlog.FromRequest(r).Error().Msg("Portal not found to handle remote event")
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"message": "Portal not found to handle remote event",
+		})
+		return
+	}
+
+	wClient := whatsappConnector.GetWhatsappCloudClient(ctx, userLogin)
+	err = wClient.HandleCloudMessage(ctx, body, portal)
+
+	if err != nil {
+		hlog.FromRequest(r).Error().Err(err).Msg("Error while handling cloud message")
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"message": fmt.Sprintf("Error while handling cloud message: %s", err),
+		})
 		return
 	}
 

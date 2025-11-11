@@ -10,17 +10,31 @@ import (
 )
 
 func get_userLogin(w http.ResponseWriter, r *http.Request) *bridgev2.UserLogin {
+	provisioning := brmain.Matrix.Provisioning
+
+	logins, ok := provisioning.GetExplicitLoginForRequest(w, r)
+
+	if !ok {
+		hlog.FromRequest(r).Error().Msg("Provisioning is not available")
+		hlog.FromRequest(r).Error().Interface("provisioning", logins).Msg("Provisioning is not available, returning nil user login")
+		return nil
+	}
+
+	if provisioning == nil {
+		hlog.FromRequest(r).Error().Msg("Provisioning is not available")
+		return nil
+	}
 	// This function retrieves the user login from the request context.
-	userLogin, failed := brmain.Matrix.Provisioning.GetExplicitLoginForRequest(w, r)
+	userLogin, failed := provisioning.GetExplicitLoginForRequest(w, r)
 
 	if userLogin != nil || failed {
 		return userLogin
 	}
 
 	// If the user login is not found in the cache, we can try to fetch it
-	userLogin = brmain.Matrix.Provisioning.GetUser(r).GetDefaultLogin()
+	userLoginResult := provisioning.GetUser(r).GetDefaultLogin()
 
-	return userLogin
+	return userLoginResult
 }
 
 func validateUserLogin(w http.ResponseWriter, r *http.Request) error {

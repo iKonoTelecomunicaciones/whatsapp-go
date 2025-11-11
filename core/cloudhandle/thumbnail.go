@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package msgconv
+package cloudhandle
 
 import (
 	"bytes"
@@ -29,6 +29,9 @@ import (
 const thumbnailMaxSize = 72
 const thumbnailMinSize = 24
 
+// createThumbnailAndGetSize takes an image as a byte slice, resizes it to fit within
+// predefined maximum and minimum dimensions, and then re-encodes it as either a PNG or JPEG.
+// It returns the resulting thumbnail as a byte slice, along with its new width and height.
 func createThumbnailAndGetSize(source []byte, pngThumbnail bool) ([]byte, int, int, error) {
 	src, _, err := image.Decode(bytes.NewReader(source))
 	if err != nil {

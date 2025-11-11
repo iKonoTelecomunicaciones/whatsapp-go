@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package msgconv
+package cloudhandle
 
 import (
 	"context"
@@ -31,6 +31,8 @@ import (
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 )
 
+// ToWhatsApp converts a Matrix event into a WhatsApp-compatible message format.
+// It handles different message types and prepares the message for sending.
 func (mc *MessageConverter) ToWhatsApp(
 	ctx context.Context,
 	evt *event.Event,
@@ -56,6 +58,8 @@ func (mc *MessageConverter) ToWhatsApp(
 	return message, nil
 }
 
+// parseText extracts the plain text from a message's content,
+// parsing HTML if available and extracting any user mentions.
 func (mc *MessageConverter) parseText(
 	ctx context.Context,
 	content *event.MessageEventContent,
@@ -73,6 +77,8 @@ func (mc *MessageConverter) parseText(
 	return
 }
 
+// constructTextMessage builds a text message object from the given content.
+// It parses the text and mentions, then wraps them in a MatrixMessage struct.
 func (mc *MessageConverter) constructTextMessage(
 	ctx context.Context,
 	content *event.MessageEventContent,
@@ -103,6 +109,8 @@ func (mc *MessageConverter) constructTextMessage(
 	return matrix_message
 }
 
+// convertPill handles the conversion of a Matrix user mention (a "pill")
+// into a format that WhatsApp can understand, typically an @-mention with a JID.
 func (mc *MessageConverter) convertPill(
 	displayname, mxid, eventID string, ctx format.Context,
 ) string {
