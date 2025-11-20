@@ -51,6 +51,7 @@ func (whatsappClient *WhatsappCloudClient) HandleMatrixMessage(
 	ctx context.Context,
 	msg *bridgev2.MatrixMessage,
 ) (*bridgev2.MatrixMessageResponse, error) {
+	zerolog.Ctx(ctx).Error().Msgf("Handling Matrix message ID: %s", msg.Event.ID)
 	whatsappMessage, err := whatsappClient.Main.MsgConv.ToWhatsApp(
 		ctx,
 		msg.Event,
@@ -148,7 +149,7 @@ func (whatsappClient *WhatsappCloudClient) HandleCloudMessage(
 
 	eventChange := eventEntry.Changes[0]
 
-	if eventChange.Value.Messages == nil || len(eventChange.Value.Messages) == 0 {
+	if len(eventChange.Value.Messages) == 0 {
 		log.Warn().Msg("Ignoring event because it contains no messages")
 		return fmt.Errorf("ignoring event because it contains no messages")
 	}

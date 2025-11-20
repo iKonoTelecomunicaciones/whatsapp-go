@@ -50,6 +50,16 @@ func (mc *MessageConverter) ToWhatsApp(
 	switch content.MsgType {
 	case event.MsgText:
 		message = mc.constructTextMessage(ctx, content, evt, portal)
+	case event.MessageType(event.EventSticker.Type), event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
+		zerolog.Ctx(ctx).Debug().Str("msgtype", string(content.MsgType)).Msg("Processing media message")
+		zerolog.Ctx(ctx).Error().Str("content.URL", string(content.URL)).Msg("Processing media message")
+		media_id, err := mc.GetMediaIDWhatsApp(ctx, string(content.URL))
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to get media for WhatsApp: %w", err)
+		}
+
+		message = mc.constructMediaMessage(ctx, content, evt, portal, media_id)
 	default:
 		return nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMessageType, content.MsgType)
 	}
@@ -98,6 +108,173 @@ func (mc *MessageConverter) constructTextMessage(
 	matrix_message.Content = content
 
 	return matrix_message
+}
+
+// Given a mxc url, it gets the media from the mxc server.
+//
+// Parameters:
+//
+//	ctx : The context of the request.
+//	mxc: The mxc url of the media to retrieve.
+//
+// Returns:
+//
+//	The media file as a byte slice,
+//	The original filename of the media,
+func (mc *MessageConverter) getMedia(ctx context.Context, mxc string) ([]byte, string, error) {
+	return nil, "", nil
+}
+
+// Given a mxc url, it gets the media and update it to meta to get an id.
+//
+// Parameters:
+//
+//	ctx : The context of the request.
+//	mxc : The mxc url of the media.
+//
+// Returns:
+//
+//	The id of the media or an error if something went wrong.
+func (mc *MessageConverter) GetMediaIDWhatsApp(
+	ctx context.Context,
+	mxc string,
+) (string, error) {
+	// Implement media retrieval logic here
+	return "", nil
+}
+
+func (mc *MessageConverter) constructMediaMessage(
+	ctx context.Context,
+	content *event.MessageEventContent,
+	evt *event.Event,
+	portal *bridgev2.Portal,
+	media_id string,
+) *bridgev2.MatrixMessage {
+	//var caption string
+	//if content.FileName != "" && content.Body != content.FileName {
+	//	caption, contextInfo.MentionedJID = mc.parseText(ctx, content)
+	//}
+	switch content.MsgType {
+	//case event.MessageType(event.EventSticker.Type):
+	//	width := uint32(content.Info.Width)
+	//	height := uint32(content.Info.Height)
+
+	//	return &waE2E.Message{
+	//		StickerMessage: &waE2E.StickerMessage{
+	//			Width:  &width,
+	//			Height: &height,
+
+	//			ContextInfo:   contextInfo,
+	//			PngThumbnail:  thumbnail,
+	//			DirectPath:    proto.String(uploaded.DirectPath),
+	//			MediaKey:      uploaded.MediaKey,
+	//			Mimetype:      proto.String(mime),
+	//			FileEncSHA256: uploaded.FileEncSHA256,
+	//			FileSHA256:    uploaded.FileSHA256,
+	//			FileLength:    proto.Uint64(uploaded.FileLength),
+	//			URL:           proto.String(uploaded.URL),
+	//		},
+	//	}
+	//case event.MsgAudio:
+	//	waveform, seconds := getAudioInfo(content)
+
+	//	return &waE2E.Message{
+	//		AudioMessage: &waE2E.AudioMessage{
+	//			Seconds:  &seconds,
+	//			Waveform: waveform,
+	//			PTT:      proto.Bool(content.MSC3245Voice != nil),
+
+	//			URL:           proto.String(uploaded.URL),
+	//			DirectPath:    proto.String(uploaded.DirectPath),
+	//			MediaKey:      uploaded.MediaKey,
+	//			Mimetype:      proto.String(mime),
+	//			FileEncSHA256: uploaded.FileEncSHA256,
+	//			FileSHA256:    uploaded.FileSHA256,
+	//			FileLength:    proto.Uint64(uploaded.FileLength),
+	//			ContextInfo:   contextInfo,
+	//		},
+	//	}
+	//case event.MsgImage:
+	//	width := uint32(content.Info.Width)
+	//	height := uint32(content.Info.Height)
+
+	//	return &waE2E.Message{
+	//		ImageMessage: &waE2E.ImageMessage{
+	//			Width:  &width,
+	//			Height: &height,
+
+	//			Caption:       proto.String(caption),
+	//			JPEGThumbnail: thumbnail,
+	//			URL:           proto.String(uploaded.URL),
+	//			DirectPath:    proto.String(uploaded.DirectPath),
+	//			MediaKey:      uploaded.MediaKey,
+	//			Mimetype:      proto.String(mime),
+	//			FileEncSHA256: uploaded.FileEncSHA256,
+	//			FileSHA256:    uploaded.FileSHA256,
+	//			FileLength:    proto.Uint64(uploaded.FileLength),
+	//			ContextInfo:   contextInfo,
+	//		},
+	//	}
+	//case event.MsgVideo:
+	//	isGIF := mime == "video/mp4" && (content.Info.MimeType == "image/gif" || content.Info.MauGIF)
+
+	//	width := uint32(content.Info.Width)
+	//	height := uint32(content.Info.Height)
+	//	seconds := uint32(content.Info.Duration / 1000)
+
+	//	return &waE2E.Message{
+	//		VideoMessage: &waE2E.VideoMessage{
+	//			GifPlayback: proto.Bool(isGIF),
+	//			Width:       &width,
+	//			Height:      &height,
+	//			Seconds:     &seconds,
+
+	//			Caption:       proto.String(caption),
+	//			JPEGThumbnail: thumbnail,
+	//			URL:           proto.String(uploaded.URL),
+	//			DirectPath:    proto.String(uploaded.DirectPath),
+	//			MediaKey:      uploaded.MediaKey,
+	//			Mimetype:      proto.String(mime),
+	//			FileEncSHA256: uploaded.FileEncSHA256,
+	//			FileSHA256:    uploaded.FileSHA256,
+	//			FileLength:    proto.Uint64(uploaded.FileLength),
+	//			ContextInfo:   contextInfo,
+	//		},
+	//	}
+	//case event.MsgFile:
+	//	fileName := content.FileName
+	//	if fileName == "" {
+	//		fileName = content.Body
+	//	}
+
+	//	msg := &waE2E.Message{
+	//		DocumentMessage: &waE2E.DocumentMessage{
+	//			FileName: proto.String(fileName),
+
+	//			Caption:       proto.String(caption),
+	//			JPEGThumbnail: thumbnail,
+	//			URL:           proto.String(uploaded.URL),
+	//			DirectPath:    proto.String(uploaded.DirectPath),
+	//			MediaKey:      uploaded.MediaKey,
+	//			Mimetype:      proto.String(mime),
+	//			FileEncSHA256: uploaded.FileEncSHA256,
+	//			FileSHA256:    uploaded.FileSHA256,
+	//			FileLength:    proto.Uint64(uploaded.FileLength),
+	//			ContextInfo:   contextInfo,
+	//		},
+	//	}
+	//	if msg.GetDocumentMessage().GetCaption() != "" {
+	//		msg.DocumentWithCaptionMessage = &waE2E.FutureProofMessage{
+	//			Message: &waE2E.Message{
+	//				DocumentMessage: msg.DocumentMessage,
+	//			},
+	//		}
+	//		msg.DocumentMessage = nil
+	//	}
+	//	return msg
+	default:
+		return nil
+	}
 }
 
 // convertPill handles the conversion of a Matrix user mention (a "pill")
