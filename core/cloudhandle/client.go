@@ -44,7 +44,7 @@ func (whatsappClient *WhatsappCloudClient) HandleMatrixMessage(
 	ctx context.Context,
 	msg *bridgev2.MatrixMessage,
 ) (*bridgev2.MatrixMessageResponse, error) {
-	chatboxMsg, err := whatsappClient.Main.MsgConv.ToWhatsApp(
+	whatsappMessage, err := whatsappClient.Main.MsgConv.ToWhatsApp(
 		ctx,
 		msg.Event,
 		msg.Content,
@@ -55,7 +55,7 @@ func (whatsappClient *WhatsappCloudClient) HandleMatrixMessage(
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert message: %w", err)
 	}
-	return whatsappClient.handleConvertedMatrixMessage(ctx, chatboxMsg)
+	return whatsappClient.handleConvertedMatrixMessage(ctx, whatsappMessage)
 }
 
 // IsThisUser checks if a Matrix User ID corresponds to this WhatsApp client.

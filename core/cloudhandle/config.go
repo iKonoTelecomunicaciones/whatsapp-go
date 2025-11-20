@@ -34,6 +34,22 @@ type DefaultEventsLevels struct {
 	RoomTombstone  *int `yaml:"room_tombstone"`
 }
 
+type ErrorCode struct {
+	ReasonEn *string `yaml:"reason_en"`
+	ReasonEs *string `yaml:"reason_es"`
+}
+
+type errorCodes map[int]ErrorCode
+
+type WhatsappCloudConfig struct {
+	CloudURL          *string     `yaml:"base_url"`
+	CloudVersion      *string     `yaml:"version"`
+	CloudWebhookPath  *string     `yaml:"webhook_path"`
+	CloudTemplatePath *string     `yaml:"template_path"`
+	CloudFileName     *string     `yaml:"file_name"`
+	CloudErrorCodes   *errorCodes `yaml:"error_codes"`
+}
+
 type Config struct {
 	OSName string `yaml:"os_name"`
 
@@ -45,6 +61,8 @@ type Config struct {
 	DefaultPowerLevels  *DefaultPowerLevels  `yaml:"default_power_levels"`
 	DefaultEventsLevels *DefaultEventsLevels `yaml:"default_events_levels"`
 	DefaultUserLevel    int                  `yaml:"default_user_level"`
+
+	WhatsApp *WhatsappCloudConfig `yaml:"whatsapp"`
 }
 
 // UnmarshalYAML customizes the YAML unmarshalling for Config.
@@ -73,6 +91,12 @@ func upgradeConfig(helper up.Helper) {
 	helper.Copy(up.Str, "displayname_template")
 
 	helper.Copy(up.Bool, "disable_status_broadcast_send")
+
+	helper.Copy(up.Str, "whatsapp", "base_url")
+	helper.Copy(up.Str, "whatsapp", "version")
+	helper.Copy(up.Str, "whatsapp", "webhook_path")
+	helper.Copy(up.Str, "whatsapp", "error_codes")
+	helper.Copy(up.Str, "whatsapp", "file_name")
 }
 
 type DisplaynameParams struct {
