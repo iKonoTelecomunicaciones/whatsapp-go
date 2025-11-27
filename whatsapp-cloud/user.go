@@ -12,6 +12,11 @@ import (
 func get_userLogin(w http.ResponseWriter, r *http.Request) *bridgev2.UserLogin {
 	provisioning := brmain.Matrix.Provisioning
 
+	if provisioning == nil {
+		hlog.FromRequest(r).Error().Msg("Provisioning is not available")
+		return nil
+	}
+
 	logins, ok := provisioning.GetExplicitLoginForRequest(w, r)
 
 	if !ok {
@@ -20,10 +25,6 @@ func get_userLogin(w http.ResponseWriter, r *http.Request) *bridgev2.UserLogin {
 		return nil
 	}
 
-	if provisioning == nil {
-		hlog.FromRequest(r).Error().Msg("Provisioning is not available")
-		return nil
-	}
 	// This function retrieves the user login from the request context.
 	userLogin, failed := provisioning.GetExplicitLoginForRequest(w, r)
 
