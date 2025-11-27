@@ -36,13 +36,13 @@ INSERT INTO portal (
     metadata
 )
 SELECT
-    portal_old.app_business_id || '@s.whatsapp.net', -- id
+    portal_old.phone_id || '@s.whatsapp.net', -- id
     portal_old.phone_id, -- other_user_id
     puppet_old.custom_mxid, -- mxid
     portal_old.app_business_id, -- relay_login_id
     portal_old.app_business_id, -- receiver
     'dm', -- room_type
-    display_name, -- name
+    puppet_old.display_name, -- name
     false, -- name_is_custom
     true, -- name_set
     false, -- avatar_set
@@ -56,15 +56,7 @@ SELECT
     false, -- in_space
     '{}' -- metadata
 FROM portal_old
-INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM puppet_old target
-    WHERE target.phone_id = portal_old.phone_id
-    AND target.app_business_id = portal_old.app_business_id
-) OR (
-    puppet_old.phone_id = portal_old.phone_id
-    AND puppet_old.app_business_id = portal_old.app_business_id
-);
+INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id;
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>>> Ghost <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO ghost (
@@ -98,15 +90,7 @@ SELECT
         'last_sync', 0
     ) -- metadata
 FROM portal_old
-INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM puppet_old target
-    WHERE target.phone_id = portal_old.phone_id
-    AND target.app_business_id = portal_old.app_business_id
-) OR (
-    puppet_old.phone_id = portal_old.phone_id
-    AND puppet_old.app_business_id = portal_old.app_business_id
-);
+INNER JOIN puppet_old on portal_old.phone_id = puppet_old.phone_id;
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> message <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO message (
@@ -126,7 +110,7 @@ INSERT INTO message (
 SELECT
     whatsapp_message_id, -- id
     event_mxid, -- mxid
-    app_business_id || '@s.whatsapp.net', -- room_id
+    phone_id || '@s.whatsapp.net', -- room_id
     app_business_id, -- room_receiver
     phone_id, -- sender_id
     sender, -- sender_mxid
@@ -188,7 +172,7 @@ INSERT INTO user_portal (
 SELECT
     relay_user_id, -- mxid
     app_business_id, -- login_id
-    app_business_id || '@s.whatsapp.net', -- portal_id
+    phone_id || '@s.whatsapp.net', -- portal_id
     false, -- in_space
     false, -- preferred
     app_business_id, -- portal_receiver
@@ -227,11 +211,5 @@ INNER JOIN portal_old on reaction_old.room_id = portal_old.mxid
 WHERE event_mxid<>'' AND whatsapp_message_id<>'' AND reaction<>'';
 
 
--- >>>>>>>>>>>>>>>>>>>>>>>>>>> Delete the old tables <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-DROP TABLE matrix_user_old;
-DROP TABLE puppet_old;
-DROP TABLE mx_version_old;
-DROP TABLE reaction_old;
-DROP TABLE message_old;
-DROP TABLE portal_old;
+-- >>>>>>>>>>>>>>>>>>>>>>>>>>> Delete the old membership type <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 DROP TYPE IF EXISTS membership;

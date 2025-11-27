@@ -7,10 +7,10 @@ ALTER TABLE IF EXISTS wb_application
 RENAME COLUMN wb_phone_id TO business_phone_id;
 
 CREATE TABLE IF NOT EXISTS wb_application (
-    waba_id TEXT NOT NULL,
-    business_phone_id TEXT NOT NULL,
+    business_id TEXT NOT NULL,
+    wb_phone_id TEXT NOT NULL,
     name TEXT,
     admin_user TEXT,
     page_access_token TEXT,
-    PRIMARY KEY (waba_id)
+    PRIMARY KEY (business_id)
 );
