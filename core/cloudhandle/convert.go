@@ -36,12 +36,12 @@ func (mc *MessageConverter) convertMediaMessage(
 	roomID *id.RoomID,
 ) (part *bridgev2.ConvertedMessagePart, contextInfo *CloudMessageInfo) {
 	log := zerolog.Ctx(ctx).With().Str("ConvertMediaMessage", msg.Messages[0].ID).Logger()
-	if msg.Messages == nil || len(msg.Messages) == 0 || len(msg.Messages) > 1 {
+	if len(msg.Messages) == 0 || len(msg.Messages) > 1 {
 		log.Warn().Msg("No messages found in CloudValue or multiple messages found")
 		return nil, nil
 	}
 
-	if msg.Contacts == nil || len(msg.Contacts) == 0 || len(msg.Contacts) > 1 {
+	if len(msg.Contacts) == 0 || len(msg.Contacts) > 1 {
 		log.Warn().Msg("No contacts found in CloudValue or multiple contacts found")
 		return nil, nil
 	}

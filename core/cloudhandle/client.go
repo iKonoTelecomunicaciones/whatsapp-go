@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var mediaTypes = []string{"image", "video", "audio", "document"}
+var mediaTypes = []string{"image", "video", "audio", "document", "sticker"}
 var validMessagesTypes = append([]string{"text"}, mediaTypes...)
 
 // Connect handles establishing the connection for the WhatsApp client.
@@ -34,23 +34,13 @@ func (whatsappClient *WhatsappCloudClient) Disconnect() {
 	return
 }
 
-// GetCapabilities returns the features and capabilities of a specific room (portal).
-// This allows the bridge to know what types of actions and messages are supported in that room.
-func (whatsappClient *WhatsappCloudClient) GetCapabilities(
-	ctx context.Context,
-	portal *bridgev2.Portal,
-) *event.RoomFeatures {
-	return &event.RoomFeatures{
-		ID: string(portal.ID),
-	}
-}
-
 // HandleMatrixMessage processes a message coming from Matrix.
 // It converts the Matrix message to a WhatsApp-compatible format and sends it.
 func (whatsappClient *WhatsappCloudClient) HandleMatrixMessage(
 	ctx context.Context,
 	msg *bridgev2.MatrixMessage,
 ) (*bridgev2.MatrixMessageResponse, error) {
+	zerolog.Ctx(ctx).Debug().Msgf("Handling Matrix message ID: %s", msg.Event.ID)
 	whatsappMessage, err := whatsappClient.Main.MsgConv.ToWhatsApp(
 		ctx,
 		msg.Event,
@@ -148,7 +138,7 @@ func (whatsappClient *WhatsappCloudClient) HandleCloudMessage(
 
 	eventChange := eventEntry.Changes[0]
 
-	if eventChange.Value.Messages == nil || len(eventChange.Value.Messages) == 0 {
+	if len(eventChange.Value.Messages) == 0 {
 		log.Warn().Msg("Ignoring event because it contains no messages")
 		return fmt.Errorf("ignoring event because it contains no messages")
 	}
