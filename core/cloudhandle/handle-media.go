@@ -126,7 +126,7 @@ func detectMimeType(data []byte) string {
 		return "image/tiff"
 
 	// Videos
-	case bytes.HasPrefix(data, []byte("\x00\x00\x00\x18ftypmp4")) || bytes.HasPrefix(data, []byte("\x00\x00\x00\x20ftypmp4")):
+	case bytes.HasPrefix(data, []byte("\x00\x00\x00\x18ftypmp4")) || bytes.HasPrefix(data, []byte("\x00\x00\x00\x20ftypmp4")) || bytes.HasPrefix(data, []byte("\x00\x00\x00 ftypisom")):
 		return "video/mp4"
 	case bytes.HasPrefix(data, []byte("ftypisom")) || bytes.HasPrefix(data, []byte("ftypmp42")):
 		return "video/mp4"
