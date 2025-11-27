@@ -50,6 +50,9 @@ func (mc *MessageConverter) ToWhatsApp(
 	switch content.MsgType {
 	case event.MsgText:
 		message = mc.constructTextMessage(ctx, content, evt, portal)
+	case event.MessageType(event.EventSticker.Type), event.MsgImage, event.MsgVideo, event.MsgAudio, event.MsgFile:
+		zerolog.Ctx(ctx).Debug().Str("msgtype", string(content.MsgType)).Msg("Processing media message")
+		message = mc.constructMediaMessage(ctx, content, evt, portal)
 	default:
 		return nil, fmt.Errorf("%w %s", bridgev2.ErrUnsupportedMessageType, content.MsgType)
 	}
@@ -92,6 +95,22 @@ func (mc *MessageConverter) constructTextMessage(
 	}
 
 	content.Body = text
+	matrix_message := &bridgev2.MatrixMessage{}
+	matrix_message.Event = evt
+	matrix_message.Portal = portal
+	matrix_message.Content = content
+
+	return matrix_message
+}
+
+func (mc *MessageConverter) constructMediaMessage(
+	ctx context.Context,
+	content *event.MessageEventContent,
+	evt *event.Event,
+	portal *bridgev2.Portal,
+) *bridgev2.MatrixMessage {
+	// Create a basic MatrixMessage structure for media messages
+	// The actual media handling will be done in the SendMessage function
 	matrix_message := &bridgev2.MatrixMessage{}
 	matrix_message.Event = evt
 	matrix_message.Portal = portal
