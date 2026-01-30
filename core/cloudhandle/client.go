@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var mediaTypes = []string{"image", "video", "audio", "document"}
+var mediaTypes = []string{"image", "video", "audio", "document", "sticker"}
 var validMessagesTypes = append([]string{"text"}, mediaTypes...)
 
 // Connect handles establishing the connection for the WhatsApp client.

@@ -19,6 +19,34 @@ type ImageCloud struct {
 	Caption  *string `json:"caption"`
 }
 
+type VideoCloud struct {
+	ID       string  `json:"id"`
+	MimeType string  `json:"mime_type"`
+	SHA256   string  `json:"sha256"`
+	Caption  *string `json:"caption"`
+}
+
+type AudioCloud struct {
+	ID       string `json:"id"`
+	MimeType string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+	Voice    bool   `json:"voice"`
+}
+
+type DocumentCloud struct {
+	ID       string `json:"id"`
+	MimeType string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+	FileName string `json:"filename"`
+}
+
+type StickerCloud struct {
+	ID       string `json:"id"`
+	MimeType string `json:"mime_type"`
+	SHA256   string `json:"sha256"`
+	Animated bool   `json:"animated"`
+}
+
 type CloudMessage struct {
 	From string `json:"from"`
 	ID   string `json:"id"`
@@ -26,8 +54,12 @@ type CloudMessage struct {
 	Text *struct {
 		Body string `json:"body"`
 	} `json:"text"`
-	Image     *ImageCloud `json:"image"`
-	TimeStamp string      `json:"timestamp"`
+	Image     *ImageCloud    `json:"image"`
+	Video     *VideoCloud    `json:"video"`
+	Audio     *AudioCloud    `json:"audio"`
+	Document  *DocumentCloud `json:"document"`
+	Sticker   *StickerCloud  `json:"sticker"`
+	TimeStamp string         `json:"timestamp"`
 	Context   *struct {
 		From string `json:"from"`
 		To   string `json:"to"`

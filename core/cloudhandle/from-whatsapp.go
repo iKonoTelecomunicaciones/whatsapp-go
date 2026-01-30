@@ -72,7 +72,6 @@ func (mc *MessageConverter) ToMatrix(
 	ctx = context.WithValue(ctx, contextKeyPortal, portal)
 
 	var part *bridgev2.ConvertedMessagePart
-	var status_part *bridgev2.ConvertedMessagePart
 	var contextInfo *CloudMessageInfo
 
 	switch message.Type {
@@ -81,6 +80,22 @@ func (mc *MessageConverter) ToMatrix(
 	case "image":
 		part, contextInfo = mc.convertMediaMessage(
 			ctx, waMsg, "image", client, intent, &portal.MXID,
+		)
+	case "video":
+		part, contextInfo = mc.convertMediaMessage(
+			ctx, waMsg, "video", client, intent, &portal.MXID,
+		)
+	case "audio":
+		part, contextInfo = mc.convertMediaMessage(
+			ctx, waMsg, "audio", client, intent, &portal.MXID,
+		)
+	case "document":
+		part, contextInfo = mc.convertMediaMessage(
+			ctx, waMsg, "document", client, intent, &portal.MXID,
+		)
+	case "sticker":
+		part, contextInfo = mc.convertMediaMessage(
+			ctx, waMsg, "sticker", client, intent, &portal.MXID,
 		)
 	default:
 		part, contextInfo = mc.convertUnknownMessage(ctx, waMsg)
@@ -101,9 +116,6 @@ func (mc *MessageConverter) ToMatrix(
 	dbMeta.SenderDeviceID = senderDeviceID
 
 	parts_to_send := []*bridgev2.ConvertedMessagePart{part}
-	if status_part != nil {
-		parts_to_send = append([]*bridgev2.ConvertedMessagePart{status_part}, parts_to_send...)
-	}
 
 	cm := &bridgev2.ConvertedMessage{
 		Parts: parts_to_send,
