@@ -12,10 +12,58 @@ import (
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/database"
 	"github.com/iKonoTelecomunicaciones/go/bridgev2/networkid"
 	"github.com/iKonoTelecomunicaciones/go/event"
+	"github.com/iKonoTelecomunicaciones/go/id"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/waid"
 	"github.com/rs/zerolog"
 )
+
+// uploadMediaToWhatsApp uploads media to WhatsApp Cloud API and returns the media ID
+func (whatsappClient *WhatsappCloudClient) uploadMediaToWhatsApp(
+	ctx context.Context, mxcURL id.ContentURIString, info *event.FileInfo,
+) (string, error) {
+	log := zerolog.Ctx(ctx).With().Str("uploadMediaToWhatsApp", string(mxcURL)).Logger()
+
+	if mxcURL == "" {
+		return "", fmt.Errorf("mxc URL is empty")
+	}
+
+	// Download media from Matrix
+	mediaData, err := whatsappClient.Main.Bridge.Bot.DownloadMedia(ctx, mxcURL, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to download media from Matrix")
+		return "", fmt.Errorf("failed to download media from Matrix: %w", err)
+	}
+
+	// Detect MIME type and generate filename
+	var mediaType string
+	if info != nil && info.MimeType != "" {
+		mediaType = info.MimeType
+	} else {
+		mediaType = detectMimeType(mediaData)
+	}
+
+	ext := getExtensionFromMimeType(mediaType)
+	mediaName := fmt.Sprintf("media.%s", ext)
+
+	// Convert MIME type to WhatsApp media type
+	whatsappMediaType := getWhatsAppMediaType(mediaType)
+
+	log.Debug().
+		Str("media_name", mediaName).
+		Str("media_type", mediaType).
+		Str("whatsapp_media_type", whatsappMediaType).
+		Int("media_size", len(mediaData)).
+		Msg("Downloaded media from Matrix, uploading to WhatsApp")
+
+	// Upload using our new uploadMedia function
+	response, err := whatsappClient.uploadMedia(ctx, mediaData, "whatsapp", mediaName, whatsappMediaType)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload media to WhatsApp: %w", err)
+	}
+
+	return response.ID, nil
+}
 
 // SendMessage sends a message to a specific WhatsApp user.
 func (whatsappClient *WhatsappCloudClient) SendMessage(
@@ -48,7 +96,76 @@ func (whatsappClient *WhatsappCloudClient) SendMessage(
 			"body":        msg.Content.Body,
 		}
 
-		// Handle text messages
+	case event.MsgImage:
+		cloudMessageType = "image"
+		// We need to upload the media to WhatsApp first, then use the ID
+		mediaID, err := whatsappClient.uploadMediaToWhatsApp(ctx, msg.Content.URL, msg.Content.Info)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to upload image to WhatsApp")
+			whatsappClient.sendMediaUploadFailedNotice(
+				ctx, msg.Portal, fmt.Sprintf("Failed to upload image to WhatsApp: %v", err),
+			)
+			return "", fmt.Errorf("failed to upload image to WhatsApp: %w", err)
+		}
+
+		messageData = map[string]interface{}{
+			"id": mediaID,
+		}
+
+		// Add caption if present
+		if msg.Content.Body != "" {
+			messageData["caption"] = msg.Content.Body
+		}
+
+	case event.MsgVideo:
+		cloudMessageType = "video"
+		mediaID, err := whatsappClient.uploadMediaToWhatsApp(ctx, msg.Content.URL, msg.Content.Info)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to upload video to WhatsApp")
+			return "", fmt.Errorf("failed to upload video to WhatsApp: %w", err)
+		}
+
+		messageData = map[string]interface{}{
+			"id": mediaID,
+		}
+
+		if msg.Content.Body != "" {
+			messageData["caption"] = msg.Content.Body
+		}
+
+	case event.MsgAudio:
+		cloudMessageType = "audio"
+		mediaID, err := whatsappClient.uploadMediaToWhatsApp(ctx, msg.Content.URL, msg.Content.Info)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to upload audio to WhatsApp")
+			return "", fmt.Errorf("failed to upload audio to WhatsApp: %w", err)
+		}
+
+		messageData = map[string]interface{}{
+			"id": mediaID,
+		}
+
+	case event.MsgFile:
+		cloudMessageType = "document"
+		mediaID, err := whatsappClient.uploadMediaToWhatsApp(ctx, msg.Content.URL, msg.Content.Info)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to upload document to WhatsApp")
+			return "", fmt.Errorf("failed to upload document to WhatsApp: %w", err)
+		}
+
+		messageData = map[string]interface{}{
+			"id": mediaID,
+		}
+
+		if msg.Content.Body != "" {
+			messageData["caption"] = msg.Content.Body
+		}
+
+		// Set filename if available
+		if msg.Content.FileName != "" {
+			messageData["filename"] = msg.Content.FileName
+		}
+
 	default:
 		log.Error().Msgf("Unsupported message type: %s", messageType)
 		return "", fmt.Errorf("unsupported message type: %s", messageType)
@@ -105,6 +222,14 @@ func (whatsappClient *WhatsappCloudClient) handleConvertedMatrixMessage(
 	ctx context.Context,
 	msg *bridgev2.MatrixMessage,
 ) (*bridgev2.MatrixMessageResponse, error) {
+	if msg == nil {
+		return nil, fmt.Errorf("message is nil")
+	}
+
+	if msg.Event == nil {
+		return nil, fmt.Errorf("message event is nil")
+	}
+
 	log := zerolog.Ctx(ctx).With().Str("handleConvertedMatrixMessage", string(msg.Event.ID)).Logger()
 
 	log.Debug().Interface("Message", msg.Event).Msgf("Handle Matrix message %s", msg.Event.ID)
@@ -118,7 +243,24 @@ func (whatsappClient *WhatsappCloudClient) handleConvertedMatrixMessage(
 		return nil, err
 	}
 
-	if msg.Content.MsgType != event.MsgText {
+	// Support text and media messages
+	supportedTypes := []event.MessageType{
+		event.MsgText,
+		event.MsgImage,
+		event.MsgVideo,
+		event.MsgAudio,
+		event.MsgFile,
+	}
+
+	supported := false
+	for _, msgType := range supportedTypes {
+		if msg.Content.MsgType == msgType {
+			supported = true
+			break
+		}
+	}
+
+	if !supported {
 		log.Error().Msgf("Unsupported message type: %s", msg.Content.MsgType)
 		return nil, fmt.Errorf("unsupported message type: %s", msg.Content.MsgType)
 	}

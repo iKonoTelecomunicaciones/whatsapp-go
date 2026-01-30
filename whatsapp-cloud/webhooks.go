@@ -59,9 +59,22 @@ func receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hlog.FromRequest(r).Info().Msgf(
+		"Searching for user login with ID [%s]. AND bridge ID [%s]",
+		wb_business_id, brmain.Bridge.DB.UserLogin.BridgeID,
+	)
+
 	userLogin, err := brmain.Bridge.GetExistingUserLoginByID(
 		ctx, networkid.UserLoginID(wb_business_id),
 	)
+
+	if err != nil {
+		hlog.FromRequest(r).Error().Err(err).Msg("Error while getting user login")
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"message": "Error while getting user login",
+		})
+		return
+	}
 
 	if userLogin == nil {
 		hlog.FromRequest(r).Error().Msg("User login not found for request")
@@ -116,7 +129,6 @@ func receive(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"message": "Message event processed successfully",
 	})
-	return
 }
 
 func verifyConnection(w http.ResponseWriter, r *http.Request) {

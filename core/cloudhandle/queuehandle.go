@@ -115,5 +115,4 @@ func (whatsappClient *WhatsappCloudClient) QueueMediaEvent(
 	).Msg("Image processed and uploaded successfully, preparing to enqueue event")
 
 	whatsappClient.UserLogin.QueueRemoteEvent(originalEvent)
-	return
 }

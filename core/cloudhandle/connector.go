@@ -3,15 +3,12 @@ package cloudhandle
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/iKonoTelecomunicaciones/go/bridgev2"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/connector/whatsappclouddb"
 	"github.com/iKonoTelecomunicaciones/whatsapp-go/core/types"
 	"go.mau.fi/util/exsync"
 )
-
-const EditMaxAge = 15 * time.Minute
 
 type WhatsappCloudConnector struct {
 	Bridge  *bridgev2.Bridge
@@ -63,20 +60,6 @@ func (whatsappConnector *WhatsappCloudConnector) Start(ctx context.Context) erro
 	}
 
 	return nil
-}
-
-// GetBridgeInfoVersion returns the version of the bridge's information and capabilities.
-func (whatsappConnector *WhatsappCloudConnector) GetBridgeInfoVersion() (info, capabilities int) {
-	return 1, 1
-}
-
-// GetCapabilities returns the general network capabilities of the bridge,
-// such as support for disappearing messages.
-func (whatsappConnector *WhatsappCloudConnector) GetCapabilities() *bridgev2.NetworkGeneralCapabilities {
-	return &bridgev2.NetworkGeneralCapabilities{
-		DisappearingMessages: true,
-		AggressiveUpdateInfo: true,
-	}
 }
 
 // GetLoginFlows returns the available login flows that this connector supports.

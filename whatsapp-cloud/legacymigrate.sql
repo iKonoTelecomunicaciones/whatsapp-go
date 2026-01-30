@@ -47,7 +47,7 @@ SELECT
     true, -- name_set
     false, -- avatar_set
     false, -- topic_set
-    portal_old.app_business_id || '-cloud', -- bridge_id
+    '', -- bridge_id
     '', -- parent_receiver
     '', -- topic
     '', -- avatar_id
@@ -74,7 +74,7 @@ INSERT INTO ghost (
     metadata
 )
 SELECT
-    portal_old.app_business_id || '-cloud', -- bridge_id
+    '', -- bridge_id
     portal_old.phone_id, -- id
     puppet_old.display_name, -- name
     '', -- avatar_id,
@@ -117,7 +117,7 @@ SELECT
     false, -- double_puppeted
     0, -- edit_count
     EXTRACT(EPOCH FROM (created_at AT TIME ZONE 'UTC')) * 1000, -- timestamp
-    app_business_id || '-cloud', -- bridge_id
+    '', -- bridge_id
     '', -- part_id,
     '{}' -- metadata
 FROM message_old
@@ -128,7 +128,7 @@ INSERT INTO "user" (mxid,management_room,bridge_id)
 SELECT
     mxid, -- mxid
     notice_room, -- management_room
-    COALESCE(app_business_id || '-cloud', 'cloud') -- bridge_id
+    '' -- bridge_id
 FROM matrix_user_old
 WHERE mxid<>'';
 
@@ -143,21 +143,21 @@ INSERT INTO user_login (
     remote_profile
 )
 SELECT
-    business_id || '-cloud', -- bridge_id
+    '', -- bridge_id
     admin_user, -- user_mxid
-    business_id, -- id
-    business_id, -- remote_name
+    waba_id, -- id
+    waba_id, -- remote_name
     '', -- space_room
     -- only: postgres
     jsonb_build_object
     (
-        'waba_id', business_id,
-        'business_phone_id', wb_phone_id,
+        'waba_id', waba_id,
+        'business_phone_id', business_phone_id,
         'page_access_token', page_access_token
     ), -- metadata
     '{}' -- remote_profile
 FROM wb_application
-WHERE business_id<>'';
+WHERE waba_id<>'';
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>> user_portal <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO user_portal (
@@ -176,13 +176,12 @@ SELECT
     false, -- in_space
     false, -- preferred
     app_business_id, -- portal_receiver
-    app_business_id || '-cloud' -- bridge_id
+    '' -- bridge_id
 FROM portal_old
 WHERE mxid<>'' AND app_business_id<>'';
 
 -- >>>>>>>>>>>>>>>>>>>>>>>>>>> reaction <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 INSERT INTO reaction (
-    bridge_id,
     message_id,
     message_part_id,
     sender_id,
@@ -196,7 +195,6 @@ INSERT INTO reaction (
     metadata
 )
 SELECT
-    app_business_id || '-cloud', -- bridge_id
     whatsapp_message_id, -- message_id
     '', -- message_part_id
     sender, -- sender_id

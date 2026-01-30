@@ -69,15 +69,15 @@ func main() {
 		if brmain.Matrix.AS.Router != nil {
 			// Register public endpoints for meta WhatsApp Cloud webhooks.
 			brmain.Matrix.AS.Router.
-				HandleFunc("/cloud/receive", verifyConnection).Methods(http.MethodGet)
+				HandleFunc("GET  /cloud/receive", verifyConnection)
 			brmain.Matrix.AS.Router.
-				HandleFunc("/cloud/receive", receive).Methods(http.MethodPost)
+				HandleFunc("POST /cloud/receive", receive)
 		}
 
 		if brmain.Matrix.Provisioning != nil {
 			// Register provisioning endpoints for meta WhatsApp Cloud.
 			brmain.Matrix.Provisioning.Router.
-				HandleFunc("/v1/register_app", registerApp).Methods(http.MethodPost)
+				HandleFunc("POST /v1/register_app", registerApp)
 
 		}
 	}
